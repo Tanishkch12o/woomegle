@@ -1,6 +1,3 @@
-<<<<<<< HEAD
-# woomegle
-=======
 # Woomegle - Random Video Chat Platform
 
 A complete, production-ready Omegle-style random video chat platform built with React, Node.js, Express, Socket.io, WebRTC, and MongoDB.
