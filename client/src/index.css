@@ -1,0 +1,242 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ─── Import Inter + Outfit fonts ──────────────────────────────────────────── */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Outfit:wght@400;500;600;700;800;900&display=swap');
+
+@layer base {
+  body {
+    @apply selection:bg-indigo-500 selection:text-white bg-slate-50 text-slate-900 dark:bg-[#050816] dark:text-gray-100;
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  }
+  .font-outfit {
+    font-family: 'Outfit', 'Inter', system-ui, sans-serif;
+  }
+}
+
+@layer components {
+  .glass-panel {
+    @apply bg-white/70 dark:bg-white/10 backdrop-blur-md border border-slate-200/60 dark:border-white/10;
+  }
+  
+  .glass-panel-dark {
+    @apply bg-slate-100/80 dark:bg-black/40 backdrop-blur-md border border-slate-200/40 dark:border-white/5;
+  }
+
+  .glass-card {
+    @apply bg-white/80 dark:bg-white/5 backdrop-blur-lg border border-slate-200/60 dark:border-white/10 shadow-xl dark:shadow-2xl;
+  }
+
+  .glass-input {
+    @apply bg-white dark:bg-white/5 border border-slate-200 dark:border-white/10 focus:border-indigo-500 focus:bg-slate-50 dark:focus:bg-white/10 rounded-xl px-4 py-3 outline-none transition-all duration-200 text-slate-800 dark:text-white placeholder-slate-400 dark:placeholder-gray-400 shadow-sm dark:shadow-none;
+  }
+}
+
+@layer utilities {
+
+  .custom-scrollbar::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    @apply bg-slate-300 dark:bg-white/10 rounded-full;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    @apply bg-slate-400 dark:bg-white/20;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   PREMIUM NAVBAR STYLES
+   ═══════════════════════════════════════════════════════════════════════════════ */
+
+/* ─── Base navbar ──────────────────────────────────────────────────────────── */
+.navbar-premium {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(20px) saturate(1.8);
+  -webkit-backdrop-filter: blur(20px) saturate(1.8);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+  overflow: visible;
+}
+
+.dark .navbar-premium {
+  background: rgba(5, 8, 22, 0.75);
+  border-bottom-color: rgba(255, 255, 255, 0.04);
+}
+
+.navbar-premium.navbar-scrolled {
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(32px) saturate(2);
+  -webkit-backdrop-filter: blur(32px) saturate(2);
+  border-bottom-color: rgba(0, 0, 0, 0.08);
+  box-shadow: 0 4px 30px rgba(0, 0, 0, 0.05);
+}
+
+.dark .navbar-premium.navbar-scrolled {
+  background: rgba(5, 8, 22, 0.92);
+  border-bottom-color: rgba(255, 255, 255, 0.06);
+  box-shadow:
+    0 4px 30px rgba(0, 0, 0, 0.3),
+    0 1px 0 rgba(99, 102, 241, 0.05) inset;
+}
+
+/* ─── Icon buttons (theme toggle, bell, menu) ─────────────────────────────── */
+.navbar-icon-btn {
+  background: rgba(0, 0, 0, 0.03);
+  border: 1px solid rgba(0, 0, 0, 0.05);
+  cursor: pointer;
+}
+.dark .navbar-icon-btn {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.navbar-icon-btn:hover {
+  background: rgba(0, 0, 0, 0.05);
+  border-color: rgba(0, 0, 0, 0.1);
+  box-shadow: 0 0 20px rgba(99, 102, 241, 0.1);
+}
+.dark .navbar-icon-btn:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.1);
+  box-shadow: 0 0 20px rgba(99, 102, 241, 0.08);
+}
+
+/* ─── Profile card button ─────────────────────────────────────────────────── */
+.profile-card-btn {
+  background: rgba(0, 0, 0, 0.02);
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  cursor: pointer;
+}
+.dark .profile-card-btn {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.profile-card-btn:hover {
+  background: rgba(0, 0, 0, 0.05);
+  border-color: rgba(0, 0, 0, 0.1);
+  box-shadow: 0 0 24px rgba(99, 102, 241, 0.1);
+}
+.dark .profile-card-btn:hover {
+  background: rgba(255, 255, 255, 0.07);
+  border-color: rgba(255, 255, 255, 0.12);
+  box-shadow: 0 0 24px rgba(99, 102, 241, 0.06);
+}
+
+/* ─── Profile dropdown ────────────────────────────────────────────────────── */
+.profile-dropdown {
+  background: rgba(255, 255, 255, 0.98);
+  backdrop-filter: blur(40px) saturate(2);
+  -webkit-backdrop-filter: blur(40px) saturate(2);
+  animation: dropdown-appear 200ms cubic-bezier(0.16, 1, 0.3, 1);
+  border: 1px solid rgba(0, 0, 0, 0.05);
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+}
+.dark .profile-dropdown {
+  background: rgba(10, 13, 26, 0.98);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+}
+
+@keyframes dropdown-appear {
+  from {
+    opacity: 0;
+    transform: translateY(-8px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* ─── Signup CTA button ───────────────────────────────────────────────────── */
+.signup-btn {
+  background: linear-gradient(135deg, #4F46E5 0%, #7C3AED 50%, #6366F1 100%);
+  box-shadow:
+    0 4px 15px rgba(79, 70, 229, 0.3),
+    0 0 0 1px rgba(99, 102, 241, 0.2) inset;
+  position: relative;
+  overflow: hidden;
+}
+
+.signup-btn::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, transparent 0%, rgba(255,255,255,0.1) 50%, transparent 100%);
+  transform: translateX(-100%);
+  transition: transform 600ms ease;
+}
+
+.signup-btn:hover::before {
+  transform: translateX(100%);
+}
+
+.signup-btn:hover {
+  box-shadow:
+    0 8px 25px rgba(79, 70, 229, 0.4),
+    0 0 0 1px rgba(99, 102, 241, 0.3) inset;
+  transform: translateY(-1px);
+}
+
+/* ─── Online badge ────────────────────────────────────────────────────────── */
+.online-badge {
+  box-shadow: 0 0 15px rgba(16, 185, 129, 0.2);
+}
+.dark .online-badge {
+  box-shadow: 0 0 15px rgba(16, 185, 129, 0.08);
+}
+
+/* ─── Mobile menu ─────────────────────────────────────────────────────────── */
+.mobile-menu {
+  background: rgba(255, 255, 255, 0.98);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+}
+.dark .mobile-menu {
+  background: rgba(5, 8, 22, 0.98);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+/* ─── Transition timing ──────────────────────────────────────────────────── */
+.transition-all {
+  transition-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   ANIMATED BACKGROUND
+   ═══════════════════════════════════════════════════════════════════════════════ */
+
+.animated-bg {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: -1;
+  background:
+    radial-gradient(ellipse at 15% 20%, rgba(79, 70, 229, 0.06) 0%, transparent 50%),
+    radial-gradient(ellipse at 85% 80%, rgba(139, 92, 246, 0.04) 0%, transparent 50%),
+    #f8fafc;
+}
+
+.dark .animated-bg {
+  background:
+    radial-gradient(ellipse at 15% 20%, rgba(79, 70, 229, 0.1) 0%, transparent 50%),
+    radial-gradient(ellipse at 85% 80%, rgba(139, 92, 246, 0.06) 0%, transparent 50%),
+    radial-gradient(ellipse at 50% 50%, rgba(6, 182, 212, 0.02) 0%, transparent 70%),
+    #050816;
+}
