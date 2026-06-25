@@ -260,7 +260,6 @@ export default function ChatPage() {
       socket.off('typing', handleTyping);
       socket.off('search-expand-prompt', handleExpandPrompt);
     };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [socket]);
 
   // Helper to add system-level alerts to message list
