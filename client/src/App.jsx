@@ -29,6 +29,7 @@ import CommunityGuidelines from './pages/CommunityGuidelines';
 // Helper Component for Private/Protected routes
 const PrivateRoute = ({ children }) => {
   const { user, loading } = useAuth();
+  const location = useLocation();
   
   if (loading) {
     return (
@@ -38,7 +39,7 @@ const PrivateRoute = ({ children }) => {
     );
   }
   
-  return user ? children : <Navigate to="/login" replace />;
+  return user ? children : <Navigate to="/login" state={{ from: location }} replace />;
 };
 
 // Helper Component for Admin-only routes

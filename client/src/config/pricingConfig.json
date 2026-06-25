@@ -1,5 +1,5 @@
 {
-  "INR": { "symbol": "₹", "weekly": 99, "monthly": 299, "yearly": 1999, "weeklyOriginal": 599, "monthlyOriginal": 1999, "yearlyOriginal": 9999 },
+  "INR": { "symbol": "₹", "weekly": 99, "monthly": 599, "yearly": 1999, "weeklyOriginal": 599, "monthlyOriginal": 1999, "yearlyOriginal": 9999 },
   "USD": { "symbol": "$", "weekly": 1.99, "monthly": 4.99, "yearly": 39.99, "weeklyOriginal": 5.99, "monthlyOriginal": 19.99, "yearlyOriginal": 99.99 },
   "GBP": { "symbol": "£", "weekly": 1.99, "monthly": 4.99, "yearly": 39.99, "weeklyOriginal": 5.99, "monthlyOriginal": 19.99, "yearlyOriginal": 99.99 },
   "EUR": { "symbol": "€", "weekly": 1.99, "monthly": 4.99, "yearly": 39.99, "weeklyOriginal": 5.99, "monthlyOriginal": 19.99, "yearlyOriginal": 99.99 }

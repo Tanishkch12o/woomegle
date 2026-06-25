@@ -226,7 +226,7 @@ export default function LandingPage() {
               </span>
             </h3>
             <p className="text-sm text-slate-600 dark:text-gray-400 leading-relaxed transition-colors duration-300">
-              Starting at just ₹99/week or ₹299/month! Unlock advanced filters like gender preference, customized search tags, special profile badges, and complete ad-free chats.
+              Starting at just ₹99/week or ₹599/month! Unlock advanced filters like gender preference, customized search tags, special profile badges, and complete ad-free chats.
             </p>
           </div>
 

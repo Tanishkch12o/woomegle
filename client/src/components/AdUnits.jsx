@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { Sparkles, ExternalLink, ShieldCheck, Zap, X, Volume2, Star } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
+import { Sparkles, ExternalLink, ShieldCheck, Zap, X, Volume2, Star, AlertCircle, Loader2 } from 'lucide-react';
 
 /**
  * BannerAd - A horizontal banner ad unit with subtle pulsing glow and prominent CTA.
@@ -58,9 +60,42 @@ export const BannerAd = () => {
  * Used in Landing Page features grid and post-chat idle screen.
  */
 export const NativeAd = () => {
+  const navigate = useNavigate();
+  const { user } = useAuth();
+  const [isNavigating, setIsNavigating] = useState(false);
+  const [toastError, setToastError] = useState(null);
+
+  const handleAction = async (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    if (isNavigating) return;
+
+    try {
+      setIsNavigating(true);
+      setToastError(null);
+
+      // Simulate a brief loading animation for improved UX
+      await new Promise(resolve => setTimeout(resolve, 400));
+
+      if (user?.isPremium) {
+        navigate('/dashboard');
+      } else if (!user) {
+        navigate('/login', { state: { from: { pathname: '/premium' } } });
+      } else {
+        navigate('/premium');
+      }
+    } catch (err) {
+      console.error('Navigation error:', err);
+      setToastError('Unable to open Premium page. Please try again.');
+    } finally {
+      setIsNavigating(false);
+    }
+  };
+
   return (
-    <div className="glass-card rounded-3xl p-6 text-left border border-slate-200 dark:border-white/10 relative overflow-hidden group hover:border-purple-500/40 transition-all duration-500 hover:-translate-y-1 bg-white/60 dark:bg-white/5 shadow-xl">
-      <div className="absolute top-4 right-4">
+    <div className="glass-card rounded-3xl p-6 text-left border border-slate-200 dark:border-white/10 relative overflow-hidden group hover:border-purple-500/40 transition-all duration-500 hover:-translate-y-1 bg-white/60 dark:bg-white/5 shadow-xl pointer-events-auto">
+      <div className="absolute top-4 right-4 z-10">
         <span className="px-2 py-0.5 rounded text-[9px] font-extrabold text-slate-500 dark:text-gray-400 bg-slate-200 dark:bg-white/10 border border-slate-300 dark:border-white/10 uppercase tracking-widest">
           Ad
         </span>
@@ -77,16 +112,35 @@ export const NativeAd = () => {
         Tired of waiting in standard queues? Get priority matchmaking, advanced gender filters, and 100% ad-free video calls instantly.
       </p>
 
+      {toastError && (
+        <div className="mb-4 rounded-xl bg-red-50 dark:bg-red-500/10 p-3 text-xs text-red-600 dark:text-red-400 border border-red-200 dark:border-red-500/20 flex items-center gap-2 animate-fade-in">
+          <AlertCircle className="h-4 w-4 shrink-0" />
+          <span>{toastError}</span>
+        </div>
+      )}
+
       <button 
         type="button"
-        onClick={(e) => e.preventDefault()}
-        className="w-full py-3 bg-slate-900 dark:bg-white text-white dark:text-slate-900 hover:bg-purple-600 dark:hover:bg-purple-400 hover:text-white dark:hover:text-slate-900 font-bold rounded-2xl text-xs transition-colors duration-300 shadow-md"
+        onClick={handleAction}
+        disabled={isNavigating}
+        style={{ cursor: 'pointer', pointerEvents: 'auto', zIndex: 20 }}
+        className="relative w-full py-3.5 bg-slate-900 dark:bg-white text-white dark:text-slate-900 hover:bg-purple-600 dark:hover:bg-purple-400 hover:text-white dark:hover:text-slate-900 font-bold rounded-2xl text-xs transition-all duration-300 shadow-lg hover:shadow-purple-500/25 active:scale-95 flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed select-none overflow-hidden"
       >
-        Explore PRO Perks
+        {isNavigating ? (
+          <>
+            <Loader2 className="h-4 w-4 animate-spin" />
+            <span>Opening...</span>
+          </>
+        ) : user?.isPremium ? (
+          <span>Manage Subscription</span>
+        ) : (
+          <span>Explore PRO Perks</span>
+        )}
       </button>
     </div>
   );
 };
+
 
 /**
  * SponsoredCard - A featured premium sponsor card for the Dashboard.

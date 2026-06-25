@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { Video, Mail, Lock, AlertCircle, Info } from 'lucide-react';
 import { apiFetch } from '../config/api';
@@ -13,6 +13,7 @@ export default function LoginPage() {
 
   const { login } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -28,7 +29,8 @@ export default function LoginPage() {
       const res = await login(loginIdentifier, password);
       
       if (res.success) {
-        navigate('/dashboard');
+        const from = location.state?.from?.pathname || '/dashboard';
+        navigate(from, { replace: true });
       } else {
         setLocalError(res.message);
       }
