@@ -5,7 +5,7 @@ import { useTheme } from '../context/ThemeContext';
 import { useSocket } from '../context/SocketContext';
 import {
   Sun, Moon, LogOut, Shield, Sparkles, Users, Bell,
-  MessageCircle, Crown, ChevronDown, Menu, X, Video
+  MessageCircle, Crown, ChevronDown, Menu, X, Video, LayoutDashboard
 } from 'lucide-react';
 
 // ─── Floating particles for navbar background ──────────────────────────────────
@@ -158,6 +158,7 @@ export default function Navbar() {
   const isActive = (path) => location.pathname === path;
 
   const navLinks = [
+    ...(user ? [{ to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard }] : []),
     { to: '/chat', label: 'Chat Rooms', icon: MessageCircle },
     ...(user ? [
       { to: '/friends', label: 'Friends', icon: Users },

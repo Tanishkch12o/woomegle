@@ -28,7 +28,7 @@ export default function LoginPage() {
       const res = await login(loginIdentifier, password);
       
       if (res.success) {
-        navigate('/chat');
+        navigate('/dashboard');
       } else {
         setLocalError(res.message);
       }

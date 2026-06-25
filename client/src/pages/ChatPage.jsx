@@ -4,6 +4,8 @@ import { useAuth } from '../context/AuthContext';
 import { useWebRTC } from '../hooks/useWebRTC';
 import PremiumUpgradeModal from '../components/PremiumUpgradeModal';
 import { apiFetch } from '../config/api';
+import { useAdManager } from '../context/AdContext';
+import { SmallBannerAd, NativeAd } from '../components/AdUnits';
 import {
   Video, Mic, MicOff, VideoOff, Monitor, PhoneOff, SkipForward,
   Send, AlertTriangle, UserCheck, ShieldAlert, Sparkles, Smile,
@@ -14,6 +16,7 @@ import {
 export default function ChatPage() {
   const { user, token, blockUser, sendFriendRequest } = useAuth();
   const { socket, joinQueue, skipMatch, leaveQueue, sendMessage, sendTyping } = useSocket();
+  const { incrementCompletedChats, showPostChatAd } = useAdManager();
 
   const [peer, setPeer] = useState(null);
   const [chatDbId, setChatDbId] = useState(null);
@@ -51,6 +54,7 @@ export default function ChatPage() {
   const peerRef = useRef(null);
   const initiateCallRef = useRef(null);
   const closePeerConnectionRef = useRef(null);
+  const incrementCompletedChatsRef = useRef(null);
 
   // Connect WebRTC Hook using the matched peer socket ID
   const {
@@ -78,6 +82,9 @@ export default function ChatPage() {
   useEffect(() => {
     closePeerConnectionRef.current = closePeerConnection;
   }, [closePeerConnection]);
+  useEffect(() => {
+    incrementCompletedChatsRef.current = incrementCompletedChats;
+  }, [incrementCompletedChats]);
 
   // 1. Initial Local Camera Access
   useEffect(() => {
@@ -105,6 +112,9 @@ export default function ChatPage() {
 
   // Keep a stable ref to handleNextMatch to prevent stale state closures
   const handleNextMatch = useCallback(() => {
+    if (status === 'connected') {
+      incrementCompletedChats();
+    }
     skipMatch();
 
     const filters = {
@@ -114,23 +124,27 @@ export default function ChatPage() {
       gender: genderFilter
     };
 
-
-    joinQueue(filters);
-  },[
+    showPostChatAd(() => {
+      joinQueue(filters);
+    });
+  }, [
+    status,
+    incrementCompletedChats,
     skipMatch,
+    showPostChatAd,
     joinQueue,
     interestsFilter,
     countryFilter,
     languageFilter,
-    genderFilter]);
-
-  
+    genderFilter
+  ]);
 
   const handleNextMatchRef = useRef(null);
 
   useEffect(() => {
     handleNextMatchRef.current = handleNextMatch;
   }, [handleNextMatch]);
+
   // Ad interval timer for Free Users (Trigger ad every 60 seconds)
   useEffect(() => {
     if (status !== 'connected' || user?.isPremium) {
@@ -222,6 +236,7 @@ export default function ChatPage() {
       if (closePeerConnectionRef.current) closePeerConnectionRef.current();
       setPeer(null);
       setStatus('idle');
+      if (incrementCompletedChatsRef.current) incrementCompletedChatsRef.current();
     };
 
     const handleSkipped = () => {
@@ -303,6 +318,9 @@ export default function ChatPage() {
   };
 
   const handleStopChat = () => {
+    if (status === 'connected') {
+      incrementCompletedChats();
+    }
     skipMatch();
     leaveQueue();
     setStatus('idle');
@@ -395,7 +413,7 @@ export default function ChatPage() {
     }
   };
 
-const handleClearChat = () => {
+  const handleClearChat = () => {
     setMessages([]);
   };
 
@@ -562,18 +580,23 @@ const handleClearChat = () => {
 
                 {/* Empty/Idle state overlay */}
                 {status === 'idle' && (
-                  <div className="absolute inset-0 flex flex-col items-center justify-center text-center p-6 space-y-4 z-10">
+                  <div className="absolute inset-0 flex flex-col items-center justify-center text-center p-6 space-y-4 z-10 overflow-y-auto bg-white/5 dark:bg-black/40 backdrop-blur-sm">
                     <Compass className="h-12 w-12 text-indigo-400 mx-auto animate-bounce" />
                     <div>
                       <h3 className="font-bold text-slate-900 dark:text-white font-outfit">Not Connected</h3>
                       <p className="text-xs text-slate-500 dark:text-gray-400 mt-1">Configure your filters and click match below to begin.</p>
                     </div>
+                    {!user?.isPremium && (
+                      <div className="w-full max-w-md mt-4">
+                        <NativeAd />
+                      </div>
+                    )}
                   </div>
                 )}
 
                 {/* Searching/Matching Queue state overlay */}
                 {status === 'searching' && (
-                  <div className="absolute inset-0 flex flex-col items-center justify-center text-center p-6 space-y-4 z-10">
+                  <div className="absolute inset-0 flex flex-col items-center justify-center text-center p-6 space-y-4 z-10 bg-white/5 dark:bg-black/40 backdrop-blur-sm">
                     <span className="relative flex h-10 w-10 mx-auto">
                       <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-indigo-400 opacity-75"></span>
                       <span className="relative inline-flex rounded-full h-10 w-10 bg-indigo-500"></span>
@@ -582,6 +605,11 @@ const handleClearChat = () => {
                       <h3 className="font-bold text-slate-900 dark:text-white font-outfit">Matching Queue...</h3>
                       <p className="text-xs text-slate-500 dark:text-gray-400 mt-1">Searching for a partner based on your preferences.</p>
                     </div>
+                    {!user?.isPremium && (
+                      <div className="w-full max-w-md mt-4">
+                        <SmallBannerAd />
+                      </div>
+                    )}
                   </div>
                 )}
 
@@ -612,6 +640,13 @@ const handleClearChat = () => {
             </div>
 
           </div>
+
+          {/* Connected Small Banner Ad */}
+          {status === 'connected' && !user?.isPremium && (
+            <div className="w-full mt-2 z-20 max-w-3xl mx-auto">
+              <SmallBannerAd />
+            </div>
+          )}
 
           {/* Call Navigation & Actions buttons bar */}
           <div className="mt-4 flex gap-3 justify-center items-center shrink-0 z-20">

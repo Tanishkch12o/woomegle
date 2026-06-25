@@ -30,7 +30,7 @@ export default function SignupPage() {
       const res = await signup(username, email, password, gender, country, language);
       
       if (res.success) {
-        navigate('/chat');
+        navigate('/dashboard');
       } else {
         setLocalError(res.message);
       }

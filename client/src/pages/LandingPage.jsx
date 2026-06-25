@@ -1,12 +1,16 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
+import { Link, Navigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useSocket } from '../context/SocketContext';
+import { BannerAd, NativeAd } from '../components/AdUnits';
 import { Video, Sparkles, Shield, Compass, Heart, Globe, Users, Zap, Lock } from 'lucide-react';
 
 export default function LandingPage() {
   const { user } = useAuth();
 
+  if (user) {
+    return <Navigate to="/dashboard" replace />;
+  }
 
   return (
     <div className="relative min-h-[calc(100vh-4rem)] flex flex-col justify-between overflow-hidden transition-colors duration-300">
@@ -38,19 +42,17 @@ export default function LandingPage() {
             {/* CTA Buttons */}
             <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start pt-2">
               <Link
-                to={user ? "/chat" : "/signup"}
+                to="/signup"
                 className="group relative flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-purple-600 to-blue-600 px-8 py-4 font-bold text-white shadow-xl shadow-purple-600/20 hover:shadow-purple-600/40 transition-all duration-300 hover:-translate-y-1"
               >
                 <span>🚀 Start Video Chat</span>
               </Link>
-              {!user && (
-                <Link
-                  to="/signup"
-                  className="flex items-center justify-center gap-2 rounded-2xl bg-white dark:bg-white/5 border border-slate-200 dark:border-white/10 px-8 py-4 font-bold text-slate-800 dark:text-white shadow-sm hover:bg-slate-50 dark:hover:bg-white/10 transition-colors duration-300"
-                >
-                  <span>⭐ Sign Up Free</span>
-                </Link>
-              )}
+              <Link
+                to="/signup"
+                className="flex items-center justify-center gap-2 rounded-2xl bg-white dark:bg-white/5 border border-slate-200 dark:border-white/10 px-8 py-4 font-bold text-slate-800 dark:text-white shadow-sm hover:bg-slate-50 dark:hover:bg-white/10 transition-colors duration-300"
+              >
+                <span>⭐ Sign Up Free</span>
+              </Link>
             </div>
 
             {/* Trust Indicators */}
@@ -172,8 +174,13 @@ export default function LandingPage() {
           </div>
         </div>
 
-        {/* Features grid */}
-        <div className="mt-32 grid gap-8 sm:grid-cols-2 lg:grid-cols-4 max-w-7xl mx-auto z-10">
+        {/* Landing Page Banner Ad */}
+        <div className="mt-16 w-full max-w-7xl mx-auto z-10">
+          <BannerAd />
+        </div>
+
+        {/* Features grid with Native Ad */}
+        <div className="mt-20 grid gap-8 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 max-w-7xl mx-auto z-10">
           {/* Card 1 */}
           <div className="glass-card rounded-3xl p-6 text-left transition-all duration-300 hover:translate-y-[-4px] hover:border-indigo-200 dark:hover:border-white/20 bg-white/60 dark:bg-white/5">
             <div className="h-12 w-12 rounded-2xl bg-indigo-50 dark:bg-indigo-500/10 border border-indigo-100 dark:border-indigo-500/20 flex items-center justify-center mb-4 transition-colors duration-300">
@@ -217,6 +224,9 @@ export default function LandingPage() {
               Unlock advanced filters like gender preference, customized search tags, special profile badges, and complete ad-free chats.
             </p>
           </div>
+
+          {/* Card 5: Native Ad */}
+          <NativeAd />
         </div>
       </div>
     </div>

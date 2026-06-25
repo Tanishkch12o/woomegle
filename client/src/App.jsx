@@ -4,6 +4,7 @@ import { AuthProvider, useAuth } from './context/AuthContext';
 import { SocketProvider } from './context/SocketContext';
 import { ThemeProvider } from './context/ThemeContext';
 import { CurrencyProvider } from './context/CurrencyContext';
+import { AdProvider } from './context/AdContext';
 
 // Core Components & Pages
 import Navbar from './components/Navbar';
@@ -19,6 +20,7 @@ import AdminDashboard from './pages/AdminDashboard';
 import PrivacyPolicy from './pages/PrivacyPolicy';
 import TermsOfService from './pages/TermsOfService';
 import SafetyCenter from './pages/SafetyCenter';
+import DashboardPage from './pages/DashboardPage';
 
 // Helper Component for Private/Protected routes
 const PrivateRoute = ({ children }) => {
@@ -73,6 +75,14 @@ function AppContent() {
 
             {/* Private Member routes */}
             <Route
+              path="/dashboard"
+              element={
+                <PrivateRoute>
+                  <DashboardPage />
+                </PrivateRoute>
+              }
+            />
+            <Route
               path="/profile"
               element={
                 <PrivateRoute>
@@ -123,9 +133,11 @@ export default function App() {
       <AuthProvider>
         <SocketProvider>
           <CurrencyProvider>
-            <Router>
-              <AppContent />
-            </Router>
+            <AdProvider>
+              <Router>
+                <AppContent />
+              </Router>
+            </AdProvider>
           </CurrencyProvider>
         </SocketProvider>
       </AuthProvider>
