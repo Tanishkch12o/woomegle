@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { io } from 'socket.io-client';
 import { useAuth } from './AuthContext';
+import { API_URL } from '../config/api';
 
 const SocketContext = createContext();
 
@@ -11,8 +12,8 @@ export const SocketProvider = ({ children }) => {
   const [isConnected, setIsConnected] = useState(false);
 
   useEffect(() => {
-    // Connect to the server. Since we have proxy in vite.config, we can connect directly.
-    const socketInstance = io({
+    // Connect to the server using centralized API_URL for production/development
+    const socketInstance = io(API_URL || undefined, {
       auth: {
         token: token || ''
       },

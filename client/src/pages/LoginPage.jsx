@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { Video, Mail, Lock, AlertCircle, Info } from 'lucide-react';
+import { apiFetch } from '../config/api';
 
 export default function LoginPage() {
   const [loginIdentifier, setLoginIdentifier] = useState('');
@@ -58,12 +59,12 @@ export default function LoginPage() {
         return;
       }
 
-      const res = await fetch('/api/auth/forgot-password', {
+      // Replace fetch('/api/auth/forgot-password') with apiFetch
+      const { res, data } = await apiFetch('/api/auth/forgot-password', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: emailInput })
       });
-      const data = await res.json();
       
       if (res.ok) {
         setInfoMessage(`${data.message}. Test Link: ${data.resetLink}`);
@@ -71,7 +72,7 @@ export default function LoginPage() {
         setLocalError(data.message);
       }
     } catch (err) {
-      setLocalError('Error triggering password reset link.');
+      setLocalError(err.message || 'Error triggering password reset link.');
     } finally {
       setIsLoading(false);
     }

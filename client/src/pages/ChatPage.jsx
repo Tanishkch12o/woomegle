@@ -3,6 +3,7 @@ import { useSocket } from '../context/SocketContext';
 import { useAuth } from '../context/AuthContext';
 import { useWebRTC } from '../hooks/useWebRTC';
 import PremiumUpgradeModal from '../components/PremiumUpgradeModal';
+import { apiFetch } from '../config/api';
 import {
   Video, Mic, MicOff, VideoOff, Monitor, PhoneOff, SkipForward,
   Send, AlertTriangle, UserCheck, ShieldAlert, Sparkles, Smile,
@@ -365,8 +366,8 @@ export default function ChatPage() {
     if (!peer) return;
 
     try {
-      // Submit report to REST API
-      const res = await fetch('/api/reports', {
+      // Submit report to REST API using apiFetch
+      const { res } = await apiFetch('/api/reports', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -390,7 +391,7 @@ export default function ChatPage() {
       }
     } catch (err) {
       console.error(err);
-      alert('Failed to submit report');
+      alert(err.message || 'Failed to submit report');
     }
   };
 

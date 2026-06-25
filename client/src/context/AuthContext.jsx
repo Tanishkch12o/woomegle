@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { apiFetch } from '../config/api';
 
 const AuthContext = createContext();
 
@@ -18,12 +19,12 @@ export const AuthProvider = ({ children }) => {
 
     try {
       setLoading(true);
-      const res = await fetch('/api/users/profile', {
+      // Replace fetch('/api/users/profile') with apiFetch
+      const { res, data } = await apiFetch('/api/users/profile', {
         headers: {
           'Authorization': `Bearer ${currentToken}`
         }
       });
-      const data = await res.json();
       
       if (res.ok) {
         setUser(data);
@@ -35,6 +36,8 @@ export const AuthProvider = ({ children }) => {
       }
     } catch (err) {
       console.error('Error fetching profile:', err);
+      // Ensure logout occurs on network failure or invalid session
+      logout();
     } finally {
       setLoading(false);
     }
@@ -48,12 +51,12 @@ export const AuthProvider = ({ children }) => {
   const login = async (loginIdentifier, password) => {
     try {
       setError(null);
-      const res = await fetch('/api/auth/login', {
+      // Replace fetch('/api/auth/login') with apiFetch
+      const { res, data } = await apiFetch('/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ loginIdentifier, password })
       });
-      const data = await res.json();
 
       if (!res.ok) {
         throw new Error(data.message || 'Login failed');
@@ -73,12 +76,12 @@ export const AuthProvider = ({ children }) => {
   const signup = async (username, email, password, gender, country, language) => {
     try {
       setError(null);
-      const res = await fetch('/api/auth/signup', {
+      // Replace fetch('/api/auth/signup') with apiFetch
+      const { res, data } = await apiFetch('/api/auth/signup', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ username, email, password, gender, country, language })
       });
-      const data = await res.json();
 
       if (!res.ok) {
         throw new Error(data.message || 'Registration failed');
@@ -104,7 +107,8 @@ export const AuthProvider = ({ children }) => {
   // Update profile
   const updateProfile = async (profileData) => {
     try {
-      const res = await fetch('/api/users/profile', {
+      // Replace fetch('/api/users/profile') with apiFetch
+      const { res, data } = await apiFetch('/api/users/profile', {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -112,7 +116,6 @@ export const AuthProvider = ({ children }) => {
         },
         body: JSON.stringify(profileData)
       });
-      const data = await res.json();
       
       if (!res.ok) {
         throw new Error(data.message || 'Failed to update profile');
@@ -128,7 +131,8 @@ export const AuthProvider = ({ children }) => {
   // Block User
   const blockUser = async (userId) => {
     try {
-      const res = await fetch(`/api/users/block/${userId}`, {
+      // Replace fetch with apiFetch
+      const { res } = await apiFetch(`/api/users/block/${userId}`, {
         method: 'POST',
         headers: { 'Authorization': `Bearer ${token}` }
       });
@@ -145,7 +149,8 @@ export const AuthProvider = ({ children }) => {
   // Unblock User
   const unblockUser = async (userId) => {
     try {
-      const res = await fetch(`/api/users/unblock/${userId}`, {
+      // Replace fetch with apiFetch
+      const { res } = await apiFetch(`/api/users/unblock/${userId}`, {
         method: 'POST',
         headers: { 'Authorization': `Bearer ${token}` }
       });
@@ -162,22 +167,23 @@ export const AuthProvider = ({ children }) => {
   // Send friend request
   const sendFriendRequest = async (userId) => {
     try {
-      const res = await fetch(`/api/users/friends/request/${userId}`, {
+      // Replace fetch with apiFetch
+      const { res, data } = await apiFetch(`/api/users/friends/request/${userId}`, {
         method: 'POST',
         headers: { 'Authorization': `Bearer ${token}` }
       });
-      const data = await res.json();
       return { success: res.ok, message: data.message };
     } catch (err) {
       console.error(err);
-      return { success: false, message: 'Server error' };
+      return { success: false, message: err.message || 'Server error' };
     }
   };
 
   // Accept friend request
   const acceptFriendRequest = async (userId) => {
     try {
-      const res = await fetch(`/api/users/friends/accept/${userId}`, {
+      // Replace fetch with apiFetch
+      const { res } = await apiFetch(`/api/users/friends/accept/${userId}`, {
         method: 'POST',
         headers: { 'Authorization': `Bearer ${token}` }
       });
@@ -194,7 +200,8 @@ export const AuthProvider = ({ children }) => {
   // Decline friend request
   const rejectFriendRequest = async (userId) => {
     try {
-      const res = await fetch(`/api/users/friends/reject/${userId}`, {
+      // Replace fetch with apiFetch
+      const { res } = await apiFetch(`/api/users/friends/reject/${userId}`, {
         method: 'POST',
         headers: { 'Authorization': `Bearer ${token}` }
       });

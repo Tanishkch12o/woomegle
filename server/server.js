@@ -10,10 +10,20 @@ console.log(`Database engine: ${isMock ? 'Mock Firestore (In-Memory)' : 'Product
 const app = express();
 const server = http.createServer(app);
 
+// Define allowed CORS origins including Vercel production and local development
+const allowedOrigins = [
+  "https://woomegle.vercel.app",
+  "http://localhost:5173",
+  "http://127.0.0.1:5173"
+];
+if (process.env.CLIENT_URL && !allowedOrigins.includes(process.env.CLIENT_URL)) {
+  allowedOrigins.push(process.env.CLIENT_URL);
+}
+
 // Socket.io Setup
 const io = new Server(server, {
   cors: {
-    origin: process.env.CLIENT_URL || "http://localhost:5173",
+    origin: allowedOrigins,
     methods: ["GET", "POST"],
     credentials: true
   }
@@ -21,7 +31,7 @@ const io = new Server(server, {
 
 // Middleware
 app.use(cors({
-  origin: process.env.CLIENT_URL || "http://localhost:5173",
+  origin: allowedOrigins,
   credentials: true
 }));
 app.use(express.json());

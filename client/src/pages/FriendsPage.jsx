@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { Users, UserCheck, UserX, MessageSquare, History, X, ShieldAlert } from 'lucide-react';
+import { apiFetch } from '../config/api';
 
 export default function FriendsPage() {
   const { user, token, acceptFriendRequest, rejectFriendRequest } = useAuth();
@@ -14,11 +15,11 @@ export default function FriendsPage() {
       if (!token) return;
       try {
         setLoadingHistory(true);
-        const res = await fetch('/api/users/history', {
+        // Use apiFetch to get chat history
+        const { res, data } = await apiFetch('/api/users/history', {
           headers: { 'Authorization': `Bearer ${token}` }
         });
         if (res.ok) {
-          const data = await res.json();
           setHistory(Array.isArray(data) ? data : data.history || []);
         }
       } catch (err) {

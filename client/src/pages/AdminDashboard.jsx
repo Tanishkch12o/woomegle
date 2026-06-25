@@ -4,6 +4,7 @@ import {
   Shield, Users, AlertTriangle, IndianRupee, Eye, Ban,
   CheckCircle, RefreshCw, EyeOff, UserMinus, ShieldAlert
 } from 'lucide-react';
+import { apiFetch } from '../config/api';
 
 export default function AdminDashboard() {
   const { token, user } = useAuth();
@@ -24,25 +25,22 @@ export default function AdminDashboard() {
     try {
       setRefreshing(true);
       
-      // Fetch Dashboard statistics
-      const statsRes = await fetch('/api/admin/stats', {
+      // Fetch Dashboard statistics using apiFetch
+      const { res: statsRes, data: statsData } = await apiFetch('/api/admin/stats', {
         headers: { 'Authorization': `Bearer ${token}` }
       });
-      const statsData = await statsRes.json();
       if (statsRes.ok) setStats(statsData);
 
-      // Fetch Reports
-      const reportsRes = await fetch('/api/admin/reports', {
+      // Fetch Reports using apiFetch
+      const { res: reportsRes, data: reportsData } = await apiFetch('/api/admin/reports', {
         headers: { 'Authorization': `Bearer ${token}` }
       });
-      const reportsData = await reportsRes.json();
       if (reportsRes.ok) setReports(reportsData);
 
-      // Fetch Users list
-      const usersRes = await fetch('/api/admin/users', {
+      // Fetch Users list using apiFetch
+      const { res: usersRes, data: usersData } = await apiFetch('/api/admin/users', {
         headers: { 'Authorization': `Bearer ${token}` }
       });
-      const usersData = await usersRes.json();
       if (usersRes.ok) setUsersList(usersData);
 
     } catch (err) {
@@ -62,7 +60,7 @@ export default function AdminDashboard() {
     if (!selectedUserToBan) return;
 
     try {
-      const res = await fetch(`/api/admin/users/${selectedUserToBan}/ban`, {
+      const { res, data } = await apiFetch(`/api/admin/users/${selectedUserToBan}/ban`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -76,17 +74,17 @@ export default function AdminDashboard() {
         setBanReason('Violating platform guidelines');
         fetchData();
       } else {
-        const data = await res.json();
         alert(data.message);
       }
     } catch (err) {
       console.error(err);
+      alert(err.message || 'Failed to ban user');
     }
   };
 
   const handleUnbanUser = async (userId) => {
     try {
-      const res = await fetch(`/api/admin/users/${userId}/unban`, {
+      const { res } = await apiFetch(`/api/admin/users/${userId}/unban`, {
         method: 'POST',
         headers: { 'Authorization': `Bearer ${token}` }
       });
@@ -99,7 +97,7 @@ export default function AdminDashboard() {
   const handleResolveReport = async (reportId, actionType) => {
     // actionType: 'resolved' or 'dismissed'
     try {
-      const res = await fetch(`/api/admin/reports/${reportId}/resolve`, {
+      const { res } = await apiFetch(`/api/admin/reports/${reportId}/resolve`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
