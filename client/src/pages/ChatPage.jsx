@@ -30,7 +30,7 @@ export default function ChatPage() {
   const [isChatOpen, setIsChatOpen] = useState(window.innerWidth >= 768);
   const [showAdPopup, setShowAdPopup] = useState(false);
   const [adCountdown, setAdCountdown] = useState(5);
-  const [chatTimeRemaining, setChatTimeRemaining] = useState(180);
+  const [chatTimeRemaining, setChatTimeRemaining] = useState(30);
 
   // Filters Selection state
   const [interestsFilter, setInterestsFilter] = useState(false);
@@ -173,10 +173,10 @@ export default function ChatPage() {
     }
   }, [showAdPopup, adCountdown]);
 
-  // Session Time Limit Timer for Free Users (180 seconds)
+  // Session Time Limit Timer for Free Users (30 seconds)
   useEffect(() => {
     if (status !== 'connected' || user?.isPremium) {
-      setChatTimeRemaining(180);
+      setChatTimeRemaining(30);
       return;
     }
 
@@ -184,7 +184,7 @@ export default function ChatPage() {
       setChatTimeRemaining(prev => {
         if (prev <= 1) {
           clearInterval(sessionTimer);
-          addSystemMessage("Standard chat time limit of 3 minutes reached. Upgrade to Premium for unlimited time!");
+          addSystemMessage("Standard chat time limit of 30 seconds reached. Upgrade to Premium for unlimited time!");
           setTimeout(() => {
             handleNextMatchRef.current();
           }, 1000);
@@ -210,7 +210,7 @@ export default function ChatPage() {
       setStatus('connected');
       setMessages([]);
       setFriendRequestSent(false);
-      setChatTimeRemaining(180);
+      setChatTimeRemaining(30);
 
       // WebRTC Call Initiation
       if (data.initiateCall && data.peer.socketId) {

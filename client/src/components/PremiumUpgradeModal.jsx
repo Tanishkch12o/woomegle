@@ -4,7 +4,7 @@ import { X, Sparkles, Check, Users, Globe, Shield } from 'lucide-react';
 
 const FEATURES = [
   { icon: Users, text: 'Gender preference matching (Male / Female / Other)' },
-  { icon: Globe,  text: 'Unlimited session time — no 3-minute cap' },
+  { icon: Globe,  text: 'Unlimited session time — no 30-second cap' },
   { icon: Shield, text: 'Ad-free browsing experience' },
   { icon: Sparkles, text: 'Priority queue — shorter wait times' },
 ];
