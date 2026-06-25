@@ -1,16 +1,16 @@
+import PRICING_DATA from './pricingConfig.json';
+
 export interface RegionPricing {
   symbol: string;
   weekly: number;
   monthly: number;
   yearly: number;
+  weeklyOriginal: number;
+  monthlyOriginal: number;
+  yearlyOriginal: number;
 }
 
-export const PRICING_CONFIG: Record<string, RegionPricing> = {
-  INR: { symbol: "₹", weekly: 99, monthly: 299, yearly: 1999 },
-  USD: { symbol: "$", weekly: 1.99, monthly: 4.99, yearly: 39.99 },
-  GBP: { symbol: "£", weekly: 1.99, monthly: 4.99, yearly: 39.99 },
-  EUR: { symbol: "€", weekly: 1.99, monthly: 4.99, yearly: 39.99 }
-};
+export const PRICING_CONFIG: Record<string, RegionPricing> = PRICING_DATA;
 
 export const EU_COUNTRIES = [
   'AT', 'BE', 'BG', 'HR', 'CY', 'CZ', 'DK', 'EE', 'FI', 'FR', 

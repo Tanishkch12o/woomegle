@@ -219,9 +219,14 @@ export default function LandingPage() {
             <div className="h-12 w-12 rounded-2xl bg-amber-50 dark:bg-amber-500/10 border border-amber-100 dark:border-amber-500/20 flex items-center justify-center mb-4 transition-colors duration-300">
               <Sparkles className="h-6 w-6 text-amber-600 dark:text-amber-400" />
             </div>
-            <h3 className="text-lg font-bold text-slate-900 dark:text-white font-outfit mb-2 transition-colors duration-300">Premium Perks</h3>
+            <h3 className="text-lg font-bold text-slate-900 dark:text-white font-outfit mb-2 transition-colors duration-300 flex items-center gap-2">
+              <span>Premium Perks</span>
+              <span className="bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 text-[10px] font-extrabold px-2 py-0.5 rounded-full uppercase tracking-wider">
+                83% OFF
+              </span>
+            </h3>
             <p className="text-sm text-slate-600 dark:text-gray-400 leading-relaxed transition-colors duration-300">
-              Unlock advanced filters like gender preference, customized search tags, special profile badges, and complete ad-free chats.
+              Starting at just ₹99/week or ₹299/month! Unlock advanced filters like gender preference, customized search tags, special profile badges, and complete ad-free chats.
             </p>
           </div>
 

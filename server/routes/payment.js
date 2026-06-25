@@ -23,10 +23,12 @@ const planDays = (planName) => {
 };
 
 // Helper: Calculate plan amount (for in-memory fallback)
-const planAmount = (planName) => {
-  if (planName === 'Weekly Pass')  return 9;
-  if (planName === 'Yearly Elite') return 299;
-  return 49; // Monthly Vibe default
+const planAmount = (planName, currency = 'USD') => {
+  const PRICING_CONFIG = require('../../client/src/config/pricingConfig.json');
+  const region = PRICING_CONFIG[currency] || PRICING_CONFIG['USD'];
+  if (planName === 'Weekly Pass')  return region.weekly;
+  if (planName === 'Yearly Elite') return region.yearly;
+  return region.monthly; // Monthly Vibe default
 };
 
 // ─── POST /api/payments/order ─────────────────────────────────────────────────
@@ -36,7 +38,7 @@ router.post('/order', protect, async (req, res) => {
   try {
     const { planName, currency = 'USD', amount } = req.body;
 
-    const finalAmount = amount || planAmount(planName);
+    const finalAmount = amount || planAmount(planName, currency);
     if (!finalAmount) {
       return res.status(400).json({ message: 'Invalid plan selected' });
     }

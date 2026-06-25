@@ -26,24 +26,30 @@ export default function PremiumPage() {
     {
       name: 'Weekly Pass',
       price: pricing.weekly,
+      originalPrice: pricing.weeklyOriginal,
       period: 'week',
       popular: false,
+      bestValue: false,
       color: 'indigo',
       description: 'Perfect for testing out all premium matchmaking parameters.'
     },
     {
       name: 'Monthly Vibe',
       price: pricing.monthly,
+      originalPrice: pricing.monthlyOriginal,
       period: 'month',
       popular: true,
+      bestValue: false,
       color: 'purple',
       description: 'Most popular option. Full access with interest priorities.'
     },
     {
       name: 'Yearly Elite',
       price: pricing.yearly,
+      originalPrice: pricing.yearlyOriginal,
       period: 'year',
       popular: false,
+      bestValue: true,
       color: 'amber',
       description: 'Ultimate value pass. Permanent premium credentials.'
     }
@@ -231,6 +237,14 @@ export default function PremiumPage() {
             const isWeekly = plan.name === 'Weekly Pass';
             const isYearly = plan.name === 'Yearly Elite';
             
+            // Calculate savings percentage
+            const savingsPercent = plan.originalPrice 
+              ? Math.round(((plan.originalPrice - plan.price) / plan.originalPrice) * 100)
+              : 0;
+
+            // Estimated tax calculation (e.g. 18% GST/VAT included)
+            const taxAmount = (plan.price * 0.18).toFixed(2);
+            
             let accentBorder = 'border-slate-200 dark:border-white/5';
             let btnStyle = 'bg-slate-100 hover:bg-slate-200 text-slate-800 dark:bg-white/5 dark:hover:bg-white/10 dark:text-white border border-slate-200 dark:border-white/10';
 
@@ -252,16 +266,38 @@ export default function PremiumPage() {
                     Most Popular
                   </span>
                 )}
+                {plan.bestValue && (
+                  <span className="absolute top-0 right-6 translate-y-[-50%] bg-gradient-to-r from-amber-500 to-orange-500 text-slate-950 text-[10px] font-extrabold uppercase tracking-wider px-3 py-1 rounded-full shadow">
+                    Best Value
+                  </span>
+                )}
                 
                 <div>
-                  <h3 className="font-outfit text-xl font-extrabold text-slate-900 dark:text-white mb-2 transition-colors duration-300">{plan.name}</h3>
+                  <div className="flex items-center justify-between mb-2">
+                    <h3 className="font-outfit text-xl font-extrabold text-slate-900 dark:text-white transition-colors duration-300">{plan.name}</h3>
+                    {savingsPercent > 0 && (
+                      <span className="bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 dark:text-emerald-400 text-[11px] font-extrabold px-2.5 py-0.5 rounded-full uppercase tracking-wider">
+                        Save {savingsPercent}%
+                      </span>
+                    )}
+                  </div>
                   <p className="text-xs text-slate-500 dark:text-gray-400 leading-relaxed mb-6 transition-colors duration-300">{plan.description}</p>
                   
-                  <div className="flex items-baseline mb-6">
-                    <span className="text-4xl font-extrabold font-outfit text-slate-900 dark:text-white transition-colors duration-300">
-                      {symbol}{plan.price}
-                    </span>
-                    <span className="text-sm text-slate-500 dark:text-gray-400 ml-1 transition-colors duration-300">/ {plan.period}</span>
+                  <div className="mb-6">
+                    <div className="flex items-baseline gap-2">
+                      <span className="text-4xl font-extrabold font-outfit text-slate-900 dark:text-white transition-colors duration-300">
+                        {symbol}{plan.price}
+                      </span>
+                      {plan.originalPrice && (
+                        <span className="text-lg text-slate-400 dark:text-gray-500 line-through font-semibold font-outfit">
+                          {symbol}{plan.originalPrice}
+                        </span>
+                      )}
+                      <span className="text-sm text-slate-500 dark:text-gray-400 transition-colors duration-300">/ {plan.period}</span>
+                    </div>
+                    <div className="text-[11px] text-slate-400 dark:text-gray-500 mt-1.5 flex items-center gap-1.5">
+                      <span>Includes {symbol}{taxAmount} applicable taxes & fees</span>
+                    </div>
                   </div>
 
                   <ul className="space-y-3 mb-8">

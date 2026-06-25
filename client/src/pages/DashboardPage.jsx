@@ -161,9 +161,14 @@ export default function DashboardPage() {
                 </div>
                 <ArrowRight className="h-5 w-5 text-slate-400 group-hover:text-amber-500 group-hover:translate-x-1 transition-all duration-300" />
               </div>
-              <h3 className="text-lg font-bold text-slate-900 dark:text-white font-outfit mb-1">Woomegle PRO</h3>
+              <h3 className="text-lg font-bold text-slate-900 dark:text-white font-outfit mb-1 flex items-center gap-2">
+                <span>Woomegle PRO</span>
+                <span className="bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 text-[10px] font-extrabold px-2.5 py-0.5 rounded-full uppercase tracking-wider">
+                  83% OFF
+                </span>
+              </h3>
               <p className="text-xs text-slate-600 dark:text-gray-400 leading-relaxed">
-                Explore priority matchmaking queues, advanced gender filtering, custom badges, and 100% ad-free calling.
+                Explore priority matchmaking queues, advanced gender filtering, custom badges, and 100% ad-free calling. Now starting at just ₹99/week!
               </p>
             </Link>
 
