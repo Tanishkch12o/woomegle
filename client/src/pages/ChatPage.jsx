@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { Link } from 'react-router-dom';
 import { useSocket } from '../context/SocketContext';
 import { useAuth } from '../context/AuthContext';
 import { useWebRTC } from '../hooks/useWebRTC';
@@ -934,9 +935,9 @@ export default function ChatPage() {
         </div>
         <p>&copy; {new Date().getFullYear()} Woomegle Inc. All rights reserved.</p>
         <div className="flex gap-4">
-          <a href="#" className="hover:text-indigo-400 transition-colors">Privacy Policy</a>
-          <a href="#" className="hover:text-indigo-400 transition-colors">Terms of Service</a>
-          <a href="#" className="hover:text-indigo-400 transition-colors">Safety Center</a>
+          <Link to="/privacy" className="hover:text-indigo-400 transition-colors">Privacy Policy</Link>
+          <Link to="/terms" className="hover:text-indigo-400 transition-colors">Terms of Service</Link>
+          <Link to="/safety" className="hover:text-indigo-400 transition-colors">Safety Center</Link>
         </div>
       </footer>
 

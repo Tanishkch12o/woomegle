@@ -21,6 +21,10 @@ import PrivacyPolicy from './pages/PrivacyPolicy';
 import TermsOfService from './pages/TermsOfService';
 import SafetyCenter from './pages/SafetyCenter';
 import DashboardPage from './pages/DashboardPage';
+import AboutUs from './pages/AboutUs';
+import ContactUs from './pages/ContactUs';
+import CookiePolicy from './pages/CookiePolicy';
+import CommunityGuidelines from './pages/CommunityGuidelines';
 
 // Helper Component for Private/Protected routes
 const PrivateRoute = ({ children }) => {
@@ -66,9 +70,13 @@ function AppContent() {
             <Route path="/" element={<LandingPage />} />
             <Route path="/login" element={<LoginPage />} />
             <Route path="/signup" element={<SignupPage />} />
+            <Route path="/about" element={<AboutUs />} />
+            <Route path="/contact" element={<ContactUs />} />
             <Route path="/privacy" element={<PrivacyPolicy />} />
             <Route path="/terms" element={<TermsOfService />} />
             <Route path="/safety" element={<SafetyCenter />} />
+            <Route path="/cookies" element={<CookiePolicy />} />
+            <Route path="/guidelines" element={<CommunityGuidelines />} />
             
             {/* Chat is public but dynamically enhanced if logged in */}
             <Route path="/chat" element={<ChatPage />} />
