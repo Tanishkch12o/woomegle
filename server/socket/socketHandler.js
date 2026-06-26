@@ -17,8 +17,14 @@ module.exports = (io) => {
 
   // ─── Socket Auth Middleware ────────────────────────────────────────────────
   io.use(async (socket, next) => {
+    const origin = socket.handshake.headers.origin || socket.handshake.headers.referer;
+    if (origin && !["https://woomegle.com", "https://www.woomegle.com"].includes(origin.replace(/\/$/, ''))) {
+      console.warn(`[SOCKET.IO ORIGIN WARNING] Connection originating from unexpected origin: ${origin}`);
+    }
+
     const token = socket.handshake.auth.token || socket.handshake.query.token;
     if (!token) {
+      console.log(`[SOCKET.IO HANDSHAKE] No token provided for socket ${socket.id}, assigning guest status.`);
       socket.user = {
         _id: 'guest_' + socket.id,
         username: 'Guest_' + Math.floor(1000 + Math.random() * 9000),
@@ -46,7 +52,7 @@ module.exports = (io) => {
       socket.user = user;
       socket.user.isGuest = false;
     } catch (err) {
-      console.error('Socket authentication failed:', err.message);
+      console.error('[SOCKET.IO HANDSHAKE ERROR] Socket authentication failed:', err.message);
       socket.user = {
         _id: 'guest_' + socket.id,
         username: 'Guest_' + Math.floor(1000 + Math.random() * 9000),
@@ -168,6 +174,41 @@ module.exports = (io) => {
     // ─── WebRTC Signaling ─────────────────────────────────────────────────────
     socket.on('signal', (payload) => {
       io.to(payload.to).emit('signal', { from: socket.id, signal: payload.signal });
+    });
+
+    // ─── Direct WebRTC Events (Offer / Answer / ICE Candidate / Join / Leave) ──
+    socket.on('offer', (payload) => {
+      if (payload && payload.to) {
+        io.to(payload.to).emit('offer', { from: socket.id, sdp: payload.sdp, offer: payload.offer });
+      }
+    });
+
+    socket.on('answer', (payload) => {
+      if (payload && payload.to) {
+        io.to(payload.to).emit('answer', { from: socket.id, sdp: payload.sdp, answer: payload.answer });
+      }
+    });
+
+    socket.on('ice-candidate', (payload) => {
+      if (payload && payload.to) {
+        io.to(payload.to).emit('ice-candidate', { from: socket.id, candidate: payload.candidate });
+      }
+    });
+
+    socket.on('join', (data) => {
+      console.log(`User joined room/queue via 'join': ${socket.user.username}`);
+      if (data && data.roomId) {
+        socket.join(data.roomId);
+      }
+    });
+
+    socket.on('leave', (data) => {
+      console.log(`User left room/queue via 'leave': ${socket.user.username}`);
+      if (data && data.roomId) {
+        socket.leave(data.roomId);
+      }
+      clearExpandTimer(socket.id);
+      matchManager.removeFromQueue(socket.id);
     });
 
     // ─── Chat Messaging ───────────────────────────────────────────────────────

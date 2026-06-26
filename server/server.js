@@ -16,17 +16,11 @@ console.log(`Database engine: ${isMock ? 'Mock Firestore (In-Memory)' : 'Product
 const app = express();
 const server = http.createServer(app);
 
+// Enable trust proxy for Render reverse proxy headers (terminating SSL correctly)
+app.set('trust proxy', 1);
+
 // Hide Express headers
 app.disable('x-powered-by');
-
-// Define allowed CORS origins
-const allowedOrigins = [
-  "https://woomegle.com",
-  "https://www.woomegle.com"
-];
-if (process.env.CLIENT_URL && !allowedOrigins.includes(process.env.CLIENT_URL)) {
-  allowedOrigins.push(process.env.CLIENT_URL);
-}
 
 // Security Middleware: Helmet (CSP, HSTS, Referrer Policy, Frame Protection)
 app.use(helmet({
@@ -65,6 +59,8 @@ app.use(cors({
     "https://www.woomegle.com"
   ],
   methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization"],
+  optionsSuccessStatus: 200,
   credentials: true
 }));
 
@@ -88,11 +84,28 @@ const io = new Server(server, {
       "https://woomegle.com",
       "https://www.woomegle.com"
     ],
-    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+    methods: ["GET", "POST"],
+    allowedHeaders: ["Content-Type", "Authorization"],
     credentials: true
   },
+  transports: ["websocket", "polling"],
+  allowEIO3: true,
   pingTimeout: 60000,
   pingInterval: 25000
+});
+
+// Robust Error Logging for Socket.io engine (capturing CORS, handshake, and origin failures)
+io.engine.on("connection_error", (err) => {
+  console.error("[SOCKET.IO CONNECTION/HANDSHAKE/CORS ERROR]", {
+    code: err.code,
+    message: err.message,
+    context: err.context,
+    reqHeaders: err.req ? {
+      origin: err.req.headers.origin,
+      referer: err.req.headers.referer,
+      host: err.req.headers.host
+    } : null
+  });
 });
 
 // Rate Limiting for API routes
