@@ -1,61 +1,61 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
-    <loc>https://woomegle.vercel.app/</loc>
+    <loc>https://woomegle.com/</loc>
     <lastmod>2026-06-25</lastmod>
     <changefreq>daily</changefreq>
     <priority>1.0</priority>
   </url>
   <url>
-    <loc>https://woomegle.vercel.app/signup</loc>
+    <loc>https://woomegle.com/signup</loc>
     <lastmod>2026-06-25</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://woomegle.vercel.app/login</loc>
+    <loc>https://woomegle.com/login</loc>
     <lastmod>2026-06-25</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://woomegle.vercel.app/about</loc>
+    <loc>https://woomegle.com/about</loc>
     <lastmod>2026-06-25</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://woomegle.vercel.app/contact</loc>
+    <loc>https://woomegle.com/contact</loc>
     <lastmod>2026-06-25</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://woomegle.vercel.app/privacy</loc>
+    <loc>https://woomegle.com/privacy</loc>
     <lastmod>2026-06-25</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://woomegle.vercel.app/terms</loc>
+    <loc>https://woomegle.com/terms</loc>
     <lastmod>2026-06-25</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://woomegle.vercel.app/safety</loc>
+    <loc>https://woomegle.com/safety</loc>
     <lastmod>2026-06-25</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://woomegle.vercel.app/cookies</loc>
+    <loc>https://woomegle.com/cookies</loc>
     <lastmod>2026-06-25</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://woomegle.vercel.app/guidelines</loc>
+    <loc>https://woomegle.com/guidelines</loc>
     <lastmod>2026-06-25</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>

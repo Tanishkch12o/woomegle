@@ -1,7 +1,7 @@
 // client/src/config/api.js
 // Centralized API base URL from Vite environment variables
-// Fallback to empty string if not defined so it works relatively if needed
-export const API_URL = import.meta.env.VITE_API_URL || '';
+// Fallback to https://api.woomegle.com if not defined so it works perfectly in production
+export const API_URL = import.meta.env.VITE_API_URL || 'https://api.woomegle.com';
 
 /**
  * Enhanced fetch helper that adds API_URL, handles network failures gracefully,

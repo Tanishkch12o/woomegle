@@ -243,7 +243,7 @@ router.post('/forgot-password', async (req, res) => {
     return res.json({
       message: 'Password reset link sent successfully to your email (Mock Mode)',
       resetToken,
-      resetLink: `${process.env.CLIENT_URL || 'http://localhost:5173'}/reset-password/${resetToken}`
+      resetLink: `${process.env.CLIENT_URL || 'https://woomegle.com'}/reset-password/${resetToken}`
     });
 
   } catch (error) {
