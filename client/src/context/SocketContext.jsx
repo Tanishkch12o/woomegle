@@ -13,10 +13,12 @@ export const SocketProvider = ({ children }) => {
 
   useEffect(() => {
     // Connect to the server using centralized API_URL for production/development
-    const socketInstance = io(API_URL || undefined, {
+    const socketInstance = io('https://api.woomegle.com', {
       auth: {
         token: token || ''
       },
+      withCredentials: true,
+      transports: ["websocket", "polling"],
       autoConnect: true
     });
 

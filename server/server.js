@@ -60,13 +60,11 @@ app.use(hpp());
 
 // CORS Middleware
 app.use(cors({
-  origin: (origin, callback) => {
-    if (!origin || allowedOrigins.includes(origin)) {
-      callback(null, true);
-    } else {
-      callback(new Error('Not allowed by CORS'));
-    }
-  },
+  origin: [
+    "https://woomegle.com",
+    "https://www.woomegle.com"
+  ],
+  methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
   credentials: true
 }));
 
@@ -86,8 +84,11 @@ app.use((req, res, next) => {
 // Socket.io Setup
 const io = new Server(server, {
   cors: {
-    origin: allowedOrigins,
-    methods: ["GET", "POST"],
+    origin: [
+      "https://woomegle.com",
+      "https://www.woomegle.com"
+    ],
+    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     credentials: true
   },
   pingTimeout: 60000,

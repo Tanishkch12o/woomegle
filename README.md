@@ -128,7 +128,7 @@ app/
    cd client
    npm run dev
    ```
-   *The Vite dev server will run on `http://localhost:5173`. Requests to `/api` or `/socket.io` are automatically proxied to the backend.*
+   *The production app runs on `https://woomegle.com`. Requests to `/api` or `/socket.io` are securely handled by `https://api.woomegle.com`.*
 
 ---
 

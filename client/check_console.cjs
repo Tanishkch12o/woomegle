@@ -19,7 +19,7 @@ const CDP = require('chrome-remote-interface');
     console.log(`[EXCEPTION] ${exception.exceptionDetails.exception.description}`);
   });
 
-  await Page.navigate({url: 'http://localhost:5173/chat'});
+  await Page.navigate({url: 'https://woomegle.com/chat'});
   await Page.loadEventFired();
   
   // wait a bit
