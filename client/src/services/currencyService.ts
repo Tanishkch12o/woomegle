@@ -5,6 +5,9 @@ export interface GeolocationData {
   countryName: string;
   currency: string;
   symbol: string;
+  source: string;
+  geoApiCalled: boolean;
+  geoApiResponse: any;
 }
 
 export interface ConvertedPricing {
@@ -31,49 +34,46 @@ export const getCurrencyInfo = (countryCode: string): { currency: string; symbol
   if (EU_COUNTRIES.includes(code)) return { currency: 'EUR', symbol: '€' };
   if (code === 'CA') return { currency: 'CAD', symbol: '$' };
   if (code === 'AU') return { currency: 'AUD', symbol: '$' };
-  if (code === 'AE') return { currency: 'AED', symbol: 'AED ' };
-  if (code === 'SG') return { currency: 'SGD', symbol: '$' };
   if (code === 'JP') return { currency: 'JPY', symbol: '¥' };
   return { currency: 'USD', symbol: '$' }; // Default fallback
 };
 
-export const getBrowserCountry = (): { countryCode: string; countryName: string } | null => {
+export const getBrowserCountry = (): { countryCode: string; countryName: string; locale: string } | null => {
   try {
     let locale = '';
-    if (typeof Intl !== 'undefined' && Intl.DateTimeFormat) {
-      locale = Intl.DateTimeFormat().resolvedOptions().locale || '';
+    if (typeof navigator !== 'undefined' && navigator.language) {
+      locale = navigator.language;
     }
-    if (!locale && typeof navigator !== 'undefined') {
-      locale = navigator.language || '';
+    if (!locale && typeof Intl !== 'undefined' && Intl.DateTimeFormat) {
+      locale = Intl.DateTimeFormat().resolvedOptions().locale || '';
     }
 
     if (!locale) return null;
 
-    const upper = locale.toUpperCase();
-    if (upper.includes('IN')) return { countryCode: 'IN', countryName: 'India' };
-    if (upper.includes('US')) return { countryCode: 'US', countryName: 'United States' };
-    if (upper.includes('GB')) return { countryCode: 'GB', countryName: 'United Kingdom' };
-    if (upper.includes('CA')) return { countryCode: 'CA', countryName: 'Canada' };
-    if (upper.includes('AU')) return { countryCode: 'AU', countryName: 'Australia' };
-    if (upper.includes('JP')) return { countryCode: 'JP', countryName: 'Japan' };
-    if (upper.includes('DE')) return { countryCode: 'DE', countryName: 'Germany' };
-    if (upper.includes('FR')) return { countryCode: 'FR', countryName: 'France' };
-    
-    const parts = locale.split('-');
-    if (parts.length > 1) {
-      const c = parts[1].toUpperCase();
-      if (['IN', 'US', 'GB', 'CA', 'AU', 'JP', 'DE', 'FR'].includes(c)) {
-        const nameMap: Record<string, string> = {
-          IN: 'India', US: 'United States', GB: 'United Kingdom', CA: 'Canada',
-          AU: 'Australia', JP: 'Japan', DE: 'Germany', FR: 'France'
-        };
-        return { countryCode: c, countryName: nameMap[c] };
-      }
+    if (import.meta.env.DEV) {
+      console.log(`Browser Locale: ${locale}`);
     }
+
+    const upper = locale.toUpperCase();
+    // Definitive non-US matches that establish country without Geo API
+    if (upper.includes('IN') || upper === 'HI') return { countryCode: 'IN', countryName: 'India', locale };
+    if (upper.includes('GB')) return { countryCode: 'GB', countryName: 'United Kingdom', locale };
+    if (upper.includes('CA')) return { countryCode: 'CA', countryName: 'Canada', locale };
+    if (upper.includes('AU')) return { countryCode: 'AU', countryName: 'Australia', locale };
+    if (upper.includes('JP') || upper === 'JA') return { countryCode: 'JP', countryName: 'Japan', locale };
+    if (upper.includes('DE')) return { countryCode: 'DE', countryName: 'Germany', locale };
+    if (upper.includes('FR')) return { countryCode: 'FR', countryName: 'France', locale };
+    if (upper.includes('IT')) return { countryCode: 'IT', countryName: 'Italy', locale };
+    if (upper.includes('ES')) return { countryCode: 'ES', countryName: 'Spain', locale };
+    if (upper.includes('NL')) return { countryCode: 'NL', countryName: 'Netherlands', locale };
+
+    // NOTE: If locale is 'en-US' or 'en', do NOT return US immediately. 
+    // Many users in India use en-US as their default browser language.
+    // We must let it fall through to ipwho.is so their real Indian IP is detected!
+    return null;
   } catch (err) {
-    // Silent fallback
+    return null;
   }
-  return null;
 };
 
 export const getCachedCountry = (): GeolocationData | null => {
@@ -104,13 +104,19 @@ export const setCachedCountry = (data: GeolocationData): void => {
   }
 };
 
-export const fetchGeoCountry = async (): Promise<GeolocationData | null> => {
+export const fetchGeoCountry = async (): Promise<{ countryCode: string; countryName: string; geoApiResponse: any } | null> => {
   try {
+    if (import.meta.env.DEV) {
+      console.log('Geo API Called: true');
+    }
+
     try {
       const { data } = await apiFetch('/api/location');
       if (data && data.countryCode) {
-        const { currency, symbol } = getCurrencyInfo(data.countryCode);
-        return { countryCode: data.countryCode, countryName: data.countryName || data.countryCode, currency, symbol };
+        if (import.meta.env.DEV) {
+          console.log('Geo API Response:', JSON.stringify(data));
+        }
+        return { countryCode: data.countryCode, countryName: data.countryName || data.countryCode, geoApiResponse: data };
       }
     } catch (backendErr) {
       // Silent fallback to ipwho.is
@@ -124,9 +130,11 @@ export const fetchGeoCountry = async (): Promise<GeolocationData | null> => {
 
     if (!res.ok) return null;
     const data = await res.json();
+    if (import.meta.env.DEV) {
+      console.log('Geo API Response:', JSON.stringify(data));
+    }
     if (data && data.country_code) {
-      const { currency, symbol } = getCurrencyInfo(data.country_code);
-      return { countryCode: data.country_code, countryName: data.country || data.country_code, currency, symbol };
+      return { countryCode: data.country_code, countryName: data.country || data.country_code, geoApiResponse: data };
     }
     return null;
   } catch (err) {
@@ -144,28 +152,80 @@ export const detectCountry = (): Promise<GeolocationData> => {
   activeDetectPromise = (async () => {
     try {
       const cached = getCachedCountry();
-      if (cached) return cached;
+      if (cached) {
+        if (import.meta.env.DEV) {
+          console.log(`Detected Country: ${cached.countryCode}`);
+          console.log(`Detected Currency: ${cached.currency}`);
+        }
+        return cached;
+      }
 
       const browserCountry = getBrowserCountry();
       if (browserCountry) {
         const { currency, symbol } = getCurrencyInfo(browserCountry.countryCode);
-        const geoData: GeolocationData = { ...browserCountry, currency, symbol };
+        const geoData: GeolocationData = { 
+          countryCode: browserCountry.countryCode, 
+          countryName: browserCountry.countryName, 
+          currency, 
+          symbol,
+          source: 'navigator.language',
+          geoApiCalled: false,
+          geoApiResponse: null
+        };
+        if (import.meta.env.DEV) {
+          console.log(`Detected Country: ${geoData.countryCode}`);
+          console.log(`Detected Currency: ${geoData.currency}`);
+        }
         setCachedCountry(geoData);
         return geoData;
       }
 
       const geoCountry = await fetchGeoCountry();
       if (geoCountry) {
-        setCachedCountry(geoCountry);
-        return geoCountry;
+        const { currency, symbol } = getCurrencyInfo(geoCountry.countryCode);
+        const geoData: GeolocationData = { 
+          countryCode: geoCountry.countryCode, 
+          countryName: geoCountry.countryName, 
+          currency, 
+          symbol, 
+          source: 'ipwho.is',
+          geoApiCalled: true,
+          geoApiResponse: geoCountry.geoApiResponse
+        };
+        if (import.meta.env.DEV) {
+          console.log(`Detected Country: ${geoData.countryCode}`);
+          console.log(`Detected Currency: ${geoData.currency}`);
+        }
+        setCachedCountry(geoData);
+        return geoData;
       }
 
-      const fallback: GeolocationData = { countryCode: 'US', countryName: 'United States', currency: 'USD', symbol: '$' };
+      const fallback: GeolocationData = { 
+        countryCode: 'US', 
+        countryName: 'United States', 
+        currency: 'USD', 
+        symbol: '$',
+        source: 'fallback',
+        geoApiCalled: true,
+        geoApiResponse: { error: 'Geolocation fetch failed' }
+      };
+      if (import.meta.env.DEV) {
+        console.log(`Detected Country: ${fallback.countryCode}`);
+        console.log(`Detected Currency: ${fallback.currency}`);
+      }
       setCachedCountry(fallback);
       return fallback;
     } catch (err) {
       if (import.meta.env.DEV) console.error('[CURRENCY SERVICE] detectCountry error:', err);
-      const fallback: GeolocationData = { countryCode: 'US', countryName: 'United States', currency: 'USD', symbol: '$' };
+      const fallback: GeolocationData = { 
+        countryCode: 'US', 
+        countryName: 'United States', 
+        currency: 'USD', 
+        symbol: '$',
+        source: 'error_fallback',
+        geoApiCalled: true,
+        geoApiResponse: { error: 'Unexpected error' }
+      };
       return fallback;
     } finally {
       activeDetectPromise = null;
@@ -215,7 +275,10 @@ export const fetchExchangeRates = (): Promise<Record<string, number>> => {
 
     try {
       const cached = getCachedRates();
-      if (cached) return cached;
+      if (cached) {
+        if (import.meta.env.DEV) console.log(`Exchange Rate: ${JSON.stringify(cached)}`);
+        return cached;
+      }
 
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 5000);
@@ -227,10 +290,12 @@ export const fetchExchangeRates = (): Promise<Record<string, number>> => {
       const data = await res.json();
       const rates = data.rates || fallbackRates;
       
+      if (import.meta.env.DEV) console.log(`Exchange Rate: ${JSON.stringify(rates)}`);
       setCachedRates(rates);
       return rates;
     } catch (err) {
       if (import.meta.env.DEV) console.error('[CURRENCY SERVICE] fetchExchangeRates error:', err);
+      if (import.meta.env.DEV) console.log(`Exchange Rate: ${JSON.stringify(fallbackRates)}`);
       return fallbackRates;
     } finally {
       activeRatesPromise = null;
@@ -282,22 +347,48 @@ export const formatCurrency = (amount: number, currency: string): string => {
 export const updatePricingUI = (currency: string, symbol: string, rates: Record<string, number>): ConvertedPricing => {
   const basePlans = {
     weekly: 1.99,
-    monthly: 5.99,
-    yearly: 19.99,
+    monthly: 4.99,
+    yearly: 39.99,
     weeklyOriginal: 3.99,
     monthlyOriginal: 9.99,
-    yearlyOriginal: 29.99
+    yearlyOriginal: 49.99
   };
 
-  return {
-    symbol,
-    weekly: convertPrice(basePlans.weekly, currency, rates),
-    monthly: convertPrice(basePlans.monthly, currency, rates),
-    yearly: convertPrice(basePlans.yearly, currency, rates),
-    weeklyOriginal: convertPrice(basePlans.weeklyOriginal, currency, rates),
-    monthlyOriginal: convertPrice(basePlans.monthlyOriginal, currency, rates),
-    yearlyOriginal: convertPrice(basePlans.yearlyOriginal, currency, rates)
-  };
+  if (import.meta.env.DEV) {
+    console.log(`Price Before Conversion: ${JSON.stringify(basePlans)}`);
+  }
+
+  let pricing: ConvertedPricing;
+
+  if (currency === 'INR') {
+    // Explicit Indian fixed prices: 99, 299, 1999
+    pricing = {
+      symbol,
+      weekly: 99,
+      monthly: 299,
+      yearly: 1999,
+      weeklyOriginal: 199,
+      monthlyOriginal: 599,
+      yearlyOriginal: 3999
+    };
+  } else {
+    pricing = {
+      symbol,
+      weekly: convertPrice(basePlans.weekly, currency, rates),
+      monthly: convertPrice(basePlans.monthly, currency, rates),
+      yearly: convertPrice(basePlans.yearly, currency, rates),
+      weeklyOriginal: convertPrice(basePlans.weeklyOriginal, currency, rates),
+      monthlyOriginal: convertPrice(basePlans.monthlyOriginal, currency, rates),
+      yearlyOriginal: convertPrice(basePlans.yearlyOriginal, currency, rates)
+    };
+  }
+
+  if (import.meta.env.DEV) {
+    console.log(`Price After Conversion: ${JSON.stringify(pricing)}`);
+    console.log(`UI Updated: true`);
+  }
+
+  return pricing;
 };
 
 export const fetchGeolocation = detectCountry;

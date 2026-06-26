@@ -8,25 +8,37 @@ import {
   ConvertedPricing 
 } from '../services/currencyService';
 
-interface CurrencyContextProps {
+interface CurrencyState {
+  loading: boolean;
+  country: string;
+  currency: string;
+  exchangeRate: number;
+  formattedPrices: ConvertedPricing;
+  error: string | null;
+}
+
+interface CurrencyContextProps extends CurrencyState {
+  symbol: string;
+  formatPrice: (amount: number) => string;
   countryCode: string;
   countryName: string;
-  currency: string;
-  symbol: string;
   pricing: ConvertedPricing;
-  loading: boolean;
-  formatPrice: (amount: number) => string;
 }
 
 const CurrencyContext = createContext<CurrencyContextProps | undefined>(undefined);
 
 export const CurrencyProvider = ({ children }: { children: ReactNode }) => {
-  const [countryCode, setCountryCode] = useState<string>('US');
-  const [countryName, setCountryName] = useState<string>('United States');
-  const [currency, setCurrency] = useState<string>('USD');
-  const [symbol, setSymbol] = useState<string>('$');
-  const [loading, setLoading] = useState<boolean>(true);
-  const [pricing, setPricing] = useState<ConvertedPricing | null>(null);
+  const fallbackPricing = updatePricingUI('USD', '$', { USD: 1 });
+  
+  const [currencyState, setCurrencyState] = useState<CurrencyState>({
+    loading: true,
+    country: 'US',
+    currency: 'USD',
+    exchangeRate: 1,
+    formattedPrices: fallbackPricing,
+    error: null
+  });
+  
   const initializedRef = useRef<boolean>(false);
 
   useEffect(() => {
@@ -36,34 +48,35 @@ export const CurrencyProvider = ({ children }: { children: ReactNode }) => {
     
     const initCurrency = async () => {
       try {
-        setLoading(true);
         const geoData: GeolocationData = await detectCountry();
         const rates = await fetchExchangeRates();
 
         if (mounted) {
           const currentPricing = updatePricingUI(geoData.currency, geoData.symbol, rates);
+          const currentRate = rates[geoData.currency] || 1;
           
-          setCountryCode(geoData.countryCode);
-          setCountryName(geoData.countryName);
-          setCurrency(geoData.currency);
-          setSymbol(geoData.symbol);
-          setPricing(currentPricing);
+          setCurrencyState({
+            loading: false,
+            country: geoData.countryCode,
+            currency: geoData.currency,
+            exchangeRate: currentRate,
+            formattedPrices: currentPricing,
+            error: null
+          });
         }
-      } catch (err) {
+      } catch (err: any) {
         if (import.meta.env.DEV) {
           console.error('[CURRENCY CONTEXT] Init Error:', err);
         }
         if (mounted) {
-          // Fallback to USD
-          setCountryCode('US');
-          setCountryName('United States');
-          setCurrency('USD');
-          setSymbol('$');
-          setPricing(updatePricingUI('USD', '$', { USD: 1 }));
-        }
-      } finally {
-        if (mounted) {
-          setLoading(false);
+          setCurrencyState({
+            loading: false,
+            country: 'US',
+            currency: 'USD',
+            exchangeRate: 1,
+            formattedPrices: fallbackPricing,
+            error: err.message || 'Geolocation fetch failed'
+          });
         }
       }
     };
@@ -75,17 +88,18 @@ export const CurrencyProvider = ({ children }: { children: ReactNode }) => {
     };
   }, []);
 
-  const fallbackPricing = updatePricingUI('USD', '$', { USD: 1 });
-  const activePricing = pricing || fallbackPricing;
+  const symbolMap: Record<string, string> = {
+    INR: '₹', USD: '$', GBP: '£', EUR: '€', CAD: '$', AUD: '$', AED: 'AED ', SGD: '$', JPY: '¥'
+  };
+  const currentSymbol = symbolMap[currencyState.currency] || '$';
 
   const contextValue: CurrencyContextProps = {
-    countryCode,
-    countryName,
-    currency,
-    symbol,
-    pricing: activePricing,
-    loading,
-    formatPrice: (amount: number) => formatCurrency(amount, currency)
+    ...currencyState,
+    symbol: currentSymbol,
+    formatPrice: (amount: number) => formatCurrency(amount, currencyState.currency),
+    countryCode: currencyState.country,
+    countryName: currencyState.country === 'IN' ? 'India' : currencyState.country === 'US' ? 'United States' : currencyState.country,
+    pricing: currencyState.formattedPrices
   };
 
   return (
