@@ -1,4 +1,9 @@
 User-agent: *
 Allow: /
+Disallow: /chat
+Disallow: /admin
+Disallow: /dashboard
+Disallow: /checkout
+Disallow: /reset-password
 
 Sitemap: https://woomegle.com/sitemap.xml

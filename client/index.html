@@ -37,6 +37,108 @@
   <!-- Google AdSense (Included Exactly Once) -->
   <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9986161407168773"
      crossorigin="anonymous"></script>
+
+  <!-- Schema.org JSON-LD Structured Data (Website, Organization, WebApplication, FAQ, Breadcrumb) -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "WebSite",
+        "@id": "https://woomegle.com/#website",
+        "url": "https://woomegle.com/",
+        "name": "Woomegle",
+        "description": "Connect, meet, and match with thousands of people worldwide in high-quality video conversations instantly. The Next Generation of Random Video Chat.",
+        "potentialAction": {
+          "@type": "SearchAction",
+          "target": "https://woomegle.com/search?q={search_term_string}",
+          "query-input": "required name=search_term_string"
+        }
+      },
+      {
+        "@type": "Organization",
+        "@id": "https://woomegle.com/#organization",
+        "name": "Woomegle",
+        "url": "https://woomegle.com/",
+        "logo": "https://woomegle.com/manifest-icon-512.png",
+        "sameAs": [
+          "https://twitter.com/woomegle",
+          "https://facebook.com/woomegle"
+        ]
+      },
+      {
+        "@type": "WebApplication",
+        "@id": "https://woomegle.com/#webapp",
+        "name": "Woomegle Random Video Chat",
+        "applicationCategory": "SocialNetworkingApplication",
+        "operatingSystem": "All",
+        "url": "https://woomegle.com/",
+        "browserRequirements": "Requires HTML5 and WebRTC support",
+        "offers": {
+          "@type": "AggregateOffer",
+          "priceCurrency": "INR",
+          "lowPrice": "0",
+          "highPrice": "1999",
+          "offerCount": "3"
+        }
+      },
+      {
+        "@type": "BreadcrumbList",
+        "@id": "https://woomegle.com/#breadcrumb",
+        "itemListElement": [
+          {
+            "@type": "ListItem",
+            "position": 1,
+            "name": "Home",
+            "item": "https://woomegle.com/"
+          },
+          {
+            "@type": "ListItem",
+            "position": 2,
+            "name": "Premium",
+            "item": "https://woomegle.com/premium"
+          },
+          {
+            "@type": "ListItem",
+            "position": 3,
+            "name": "Safety Guidelines",
+            "item": "https://woomegle.com/safety"
+          }
+        ]
+      },
+      {
+        "@type": "FAQPage",
+        "@id": "https://woomegle.com/#faq",
+        "mainEntity": [
+          {
+            "@type": "Question",
+            "name": "What is Woomegle?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "Woomegle is a premium random video chat platform that allows you to connect instantly with people globally in high-quality WebRTC video streams."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "Is Woomegle free to use?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "Yes! Woomegle offers completely free global video matching, with optional PRO upgrades for advanced filters and premium perks."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "How does Woomegle ensure safety?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "Woomegle implements automated moderation, instant reporting tools, strict AI matching safeguards, and community safety guidelines."
+            }
+          }
+        ]
+      }
+    ]
+  }
+  </script>
 </head>
 
 <body class="bg-darkBg text-gray-200 antialiased font-sans transition-colors duration-300">

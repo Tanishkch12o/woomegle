@@ -57,12 +57,56 @@ const AdminRoute = ({ children }) => {
   return user && user.isAdmin ? children : <Navigate to="/" replace />;
 };
 
+// Dynamic Title & Meta Description Manager for SEO
+const RouteTitleManager = () => {
+  const location = useLocation();
+  React.useEffect(() => {
+    const titles = {
+      '/': 'Woomegle | Random Video Chat Platform',
+      '/login': 'Log In to Woomegle | Premium Video Chat',
+      '/signup': 'Sign Up for Woomegle | Join Global Matches',
+      '/about': 'About Us | Woomegle Video Chat',
+      '/contact': 'Contact Support | Woomegle',
+      '/privacy': 'Privacy Policy | Woomegle Security',
+      '/terms': 'Terms of Service | Woomegle',
+      '/safety': 'Safety Center & Guidelines | Woomegle',
+      '/cookies': 'Cookie Policy | Woomegle',
+      '/guidelines': 'Community Guidelines | Woomegle',
+      '/chat': 'Live Video Chat | Woomegle',
+      '/dashboard': 'Member Dashboard | Woomegle',
+      '/profile': 'My Profile | Woomegle',
+      '/friends': 'My Friends & Matches | Woomegle',
+      '/premium': 'Explore PRO Perks | Woomegle Premium',
+      '/admin': 'Admin Dashboard | Woomegle Management'
+    };
+
+    const descriptions = {
+      '/': 'Connect, meet, and match with thousands of people worldwide in high-quality video conversations instantly. The Next Generation of Random Video Chat.',
+      '/login': 'Access your Woomegle account to connect with global friends and enjoy high-quality WebRTC video streaming.',
+      '/signup': 'Create your Woomegle account for free today. Set your interests, choose your preferences, and start matching instantly.',
+      '/premium': 'Unlock Woomegle PRO Perks including advanced gender filters, priority matching, ad-free experience, and 4K video resolution.'
+    };
+
+    const title = titles[location.pathname] || 'Woomegle | Random Video Chat Platform';
+    document.title = title;
+
+    const desc = descriptions[location.pathname] || descriptions['/'];
+    let metaDesc = document.querySelector('meta[name="description"]');
+    if (metaDesc) {
+      metaDesc.setAttribute('content', desc);
+    }
+  }, [location]);
+
+  return null;
+};
+
 function AppContent() {
   const location = useLocation();
   const isChatPage = location.pathname === '/chat';
 
   return (
     <div className="min-h-screen flex flex-col justify-between bg-slate-50 dark:bg-[#050816] text-slate-800 dark:text-gray-200 transition-colors duration-300">
+      <RouteTitleManager />
       <div className="flex-grow flex flex-col">
         <Navbar />
         <main className="flex-grow flex flex-col">

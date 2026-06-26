@@ -46,4 +46,20 @@ const protect = async (req, res, next) => {
   }
 };
 
-module.exports = { protect };
+const requirePremium = (req, res, next) => {
+  if (req.user && req.user.isPremium) {
+    next();
+  } else {
+    res.status(403).json({ message: 'Access denied: Premium subscription required.' });
+  }
+};
+
+const requireAdmin = (req, res, next) => {
+  if (req.user && req.user.isAdmin) {
+    next();
+  } else {
+    res.status(403).json({ message: 'Access denied: Administrator privileges required.' });
+  }
+};
+
+module.exports = { protect, requirePremium, requireAdmin };

@@ -116,6 +116,13 @@ const apiLimiter = rateLimit({
 });
 app.use('/api/', apiLimiter);
 
+// Brute-force protection for login and signup endpoints
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 15, // limit each IP to 15 login/signup requests per windowMs
+  message: { message: "Too many login or signup attempts from this IP, please try again after 15 minutes." }
+});
+
 // Import API routes
 const authRoutes = require('./routes/auth');
 const userRoutes = require('./routes/user');
@@ -124,11 +131,29 @@ const adminRoutes = require('./routes/admin');
 const paymentRoutes = require('./routes/payment');
 
 // Bind API routes
-app.use('/api/auth', authRoutes);
+app.use('/api/auth', authLimiter, authRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/reports', reportRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/payments', paymentRoutes);
+
+// Dynamic Sitemap XML Endpoint for Search Engines
+app.get('/sitemap.xml', (req, res) => {
+  res.header('Content-Type', 'application/xml');
+  res.send(`<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url><loc>https://woomegle.com/</loc><lastmod>${new Date().toISOString().split('T')[0]}</lastmod><changefreq>daily</changefreq><priority>1.0</priority></url>
+  <url><loc>https://woomegle.com/signup</loc><lastmod>${new Date().toISOString().split('T')[0]}</lastmod><changefreq>monthly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://woomegle.com/login</loc><lastmod>${new Date().toISOString().split('T')[0]}</lastmod><changefreq>monthly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://woomegle.com/about</loc><lastmod>${new Date().toISOString().split('T')[0]}</lastmod><changefreq>monthly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://woomegle.com/contact</loc><lastmod>${new Date().toISOString().split('T')[0]}</lastmod><changefreq>monthly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://woomegle.com/privacy</loc><lastmod>${new Date().toISOString().split('T')[0]}</lastmod><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://woomegle.com/terms</loc><lastmod>${new Date().toISOString().split('T')[0]}</lastmod><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://woomegle.com/safety</loc><lastmod>${new Date().toISOString().split('T')[0]}</lastmod><changefreq>monthly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://woomegle.com/cookies</loc><lastmod>${new Date().toISOString().split('T')[0]}</lastmod><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://woomegle.com/guidelines</loc><lastmod>${new Date().toISOString().split('T')[0]}</lastmod><changefreq>monthly</changefreq><priority>0.7</priority></url>
+</urlset>`);
+});
 
 // Health check routes (/health and /api/health)
 const healthHandler = (req, res) => {

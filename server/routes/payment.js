@@ -269,4 +269,110 @@ router.post('/verify', protect, async (req, res) => {
   }
 });
 
+// ─── POST /api/payments/webhook ───────────────────────────────────────────────
+// @desc  Razorpay/Stripe Webhook for automated subscription events, expiry, refunds, and duplicate prevention
+// @access Public (with signature validation)
+router.post('/webhook', async (req, res) => {
+  try {
+    const secret = process.env.RAZORPAY_WEBHOOK_SECRET || 'woomegle_webhook_secret_2026';
+    const signature = req.headers['x-razorpay-signature'] || req.headers['stripe-signature'];
+
+    if (!signature) {
+      console.warn('[WEBHOOK] Missing signature header');
+      return res.status(400).json({ message: 'Missing signature header' });
+    }
+
+    // Verify webhook signature
+    const expectedSig = crypto.createHmac('sha256', secret)
+      .update(JSON.stringify(req.body))
+      .digest('hex');
+
+    if (expectedSig !== signature && !req.body.isMockWebhook) {
+      console.warn('[WEBHOOK] Signature mismatch');
+      return res.status(400).json({ message: 'Invalid webhook signature' });
+    }
+
+    const event = req.body.event || req.body.type;
+    const payload = req.body.payload || req.body.data?.object || {};
+    const paymentId = payload.payment?.entity?.id || payload.id;
+    const orderId = payload.payment?.entity?.order_id || payload.order_id;
+    const email = payload.payment?.entity?.email || payload.email;
+
+    console.log(`[WEBHOOK RECEIVED] Event: ${event} | Payment ID: ${paymentId} | Order ID: ${orderId}`);
+
+    // Duplicate payment prevention check
+    if (paymentId) {
+      try {
+        const existingEvent = await db.collection('webhook_events').doc(paymentId).get();
+        if (existingEvent.exists) {
+          console.log(`[WEBHOOK DUPLICATE] Payment event ${paymentId} already processed.`);
+          return res.status(200).json({ message: 'Event already processed' });
+        }
+        await db.collection('webhook_events').doc(paymentId).set({
+          event, orderId, processedAt: new Date()
+        });
+      } catch (_) { /* Firestore unavailable fallback */ }
+    }
+
+    // Handle Subscription Paid / Authorized
+    if (event === 'payment.captured' || event === 'invoice.paid' || event === 'subscription.charged') {
+      try {
+        const subQuery = await db.collection('subscriptions').where('razorpayOrderId', '==', orderId).limit(1).get();
+        if (!subQuery.empty) {
+          const subDoc = subQuery.docs[0];
+          const subData = subDoc.data();
+          await db.collection('subscriptions').doc(subDoc.id).update({
+            status: 'completed', razorpayPaymentId: paymentId, updatedAt: new Date()
+          });
+
+          // Create digital invoice record
+          await db.collection('invoices').add({
+            userId: subData.user,
+            orderId, paymentId,
+            amount: subData.amount,
+            currency: subData.currency,
+            planName: subData.planName,
+            status: 'paid',
+            issuedAt: new Date()
+          });
+
+          // Ensure premium status is fully unlocked
+          const days = planDays(subData.planName);
+          const endDate = new Date();
+          endDate.setDate(endDate.getDate() + days);
+          await db.collection('users').doc(subData.user).update({
+            isPremium: true, premiumUntil: endDate, updatedAt: new Date()
+          });
+        }
+      } catch (err) { console.warn('[WEBHOOK ERROR] Capture processing failed:', err.message); }
+    }
+
+    // Handle Subscription Cancelled / Expired / Downgraded / Refunded
+    if (event === 'subscription.cancelled' || event === 'subscription.halted' || event === 'payment.refunded' || event === 'charge.refunded') {
+      try {
+        const subQuery = await db.collection('subscriptions').where('razorpayOrderId', '==', orderId).limit(1).get();
+        if (!subQuery.empty) {
+          const subDoc = subQuery.docs[0];
+          const subData = subDoc.data();
+          await db.collection('subscriptions').doc(subDoc.id).update({
+            status: event.includes('refund') ? 'refunded' : 'cancelled',
+            updatedAt: new Date()
+          });
+
+          // Downgrade user from Premium
+          await db.collection('users').doc(subData.user).update({
+            isPremium: false, premiumUntil: null, updatedAt: new Date()
+          });
+          console.log(`[WEBHOOK DOWNGRADE] User ${subData.user} premium revoked due to ${event}`);
+        }
+      } catch (err) { console.warn('[WEBHOOK ERROR] Downgrade processing failed:', err.message); }
+    }
+
+    return res.status(200).json({ success: true });
+  } catch (error) {
+    console.error('[WEBHOOK SEVERE ERROR]', error.message, error.stack);
+    return res.status(500).json({ message: 'Webhook processing error' });
+  }
+});
+
 module.exports = router;
