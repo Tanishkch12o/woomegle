@@ -1,5 +1,12 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { fetchGeolocation, fetchExchangeRates, getConvertedPlans, GeolocationData, ConvertedPricing } from '../services/currencyService';
+import React, { createContext, useContext, useState, useEffect, useRef, ReactNode } from 'react';
+import { 
+  detectCountry, 
+  fetchExchangeRates, 
+  updatePricingUI, 
+  formatCurrency, 
+  GeolocationData, 
+  ConvertedPricing 
+} from '../services/currencyService';
 
 interface CurrencyContextProps {
   countryCode: string;
@@ -8,6 +15,7 @@ interface CurrencyContextProps {
   symbol: string;
   pricing: ConvertedPricing;
   loading: boolean;
+  formatPrice: (amount: number) => string;
 }
 
 const CurrencyContext = createContext<CurrencyContextProps | undefined>(undefined);
@@ -19,17 +27,21 @@ export const CurrencyProvider = ({ children }: { children: ReactNode }) => {
   const [symbol, setSymbol] = useState<string>('$');
   const [loading, setLoading] = useState<boolean>(true);
   const [pricing, setPricing] = useState<ConvertedPricing | null>(null);
+  const initializedRef = useRef<boolean>(false);
 
   useEffect(() => {
     let mounted = true;
+    if (initializedRef.current) return;
+    initializedRef.current = true;
     
     const initCurrency = async () => {
       try {
-        const geoData: GeolocationData = await fetchGeolocation();
+        setLoading(true);
+        const geoData: GeolocationData = await detectCountry();
         const rates = await fetchExchangeRates();
 
         if (mounted) {
-          const currentPricing = getConvertedPlans(geoData.currency, geoData.symbol, rates);
+          const currentPricing = updatePricingUI(geoData.currency, geoData.symbol, rates);
           
           setCountryCode(geoData.countryCode);
           setCountryName(geoData.countryName);
@@ -47,7 +59,7 @@ export const CurrencyProvider = ({ children }: { children: ReactNode }) => {
           setCountryName('United States');
           setCurrency('USD');
           setSymbol('$');
-          setPricing(getConvertedPlans('USD', '$', { USD: 0.012 }));
+          setPricing(updatePricingUI('USD', '$', { USD: 1 }));
         }
       } finally {
         if (mounted) {
@@ -63,14 +75,17 @@ export const CurrencyProvider = ({ children }: { children: ReactNode }) => {
     };
   }, []);
 
-  const fallbackPricing = getConvertedPlans('USD', '$', { USD: 0.012 });
+  const fallbackPricing = updatePricingUI('USD', '$', { USD: 1 });
+  const activePricing = pricing || fallbackPricing;
+
   const contextValue: CurrencyContextProps = {
     countryCode,
     countryName,
     currency,
     symbol,
-    pricing: pricing || fallbackPricing,
-    loading
+    pricing: activePricing,
+    loading,
+    formatPrice: (amount: number) => formatCurrency(amount, currency)
   };
 
   return (
@@ -87,4 +102,3 @@ export const useCurrency = () => {
   }
   return context;
 };
-

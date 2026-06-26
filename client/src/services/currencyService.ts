@@ -37,164 +37,268 @@ export const getCurrencyInfo = (countryCode: string): { currency: string; symbol
   return { currency: 'USD', symbol: '$' }; // Default fallback
 };
 
-export const fetchGeolocation = async (): Promise<GeolocationData> => {
+export const getBrowserCountry = (): { countryCode: string; countryName: string } | null => {
   try {
-    const CACHE_KEY = 'woomegle_geo_cache';
-    const CACHE_TS_KEY = 'woomegle_geo_ts';
-    const cachedData = localStorage.getItem(CACHE_KEY);
-    const cacheTimestamp = localStorage.getItem(CACHE_TS_KEY);
-    
-    // Cache for 24 hours (86400000 ms)
-    if (cachedData && cacheTimestamp) {
-      const isExpired = (Date.now() - parseInt(cacheTimestamp, 10)) > 24 * 60 * 60 * 1000;
-      if (!isExpired) {
-        if (import.meta.env.DEV) {
-          console.log('[GEOLOCATION] Serving cached geolocation from localStorage:', JSON.parse(cachedData));
-        }
-        return JSON.parse(cachedData);
-      }
+    let locale = '';
+    if (typeof Intl !== 'undefined' && Intl.DateTimeFormat) {
+      locale = Intl.DateTimeFormat().resolvedOptions().locale || '';
+    }
+    if (!locale && typeof navigator !== 'undefined') {
+      locale = navigator.language || '';
     }
 
-    let countryCode = 'US';
-    let countryName = 'United States';
+    if (!locale) return null;
 
-    try {
-      if (import.meta.env.DEV) {
-        console.log('[GEOLOCATION] Fetching location from backend endpoint /api/location...');
+    const upper = locale.toUpperCase();
+    if (upper.includes('IN')) return { countryCode: 'IN', countryName: 'India' };
+    if (upper.includes('US')) return { countryCode: 'US', countryName: 'United States' };
+    if (upper.includes('GB')) return { countryCode: 'GB', countryName: 'United Kingdom' };
+    if (upper.includes('CA')) return { countryCode: 'CA', countryName: 'Canada' };
+    if (upper.includes('AU')) return { countryCode: 'AU', countryName: 'Australia' };
+    if (upper.includes('JP')) return { countryCode: 'JP', countryName: 'Japan' };
+    if (upper.includes('DE')) return { countryCode: 'DE', countryName: 'Germany' };
+    if (upper.includes('FR')) return { countryCode: 'FR', countryName: 'France' };
+    
+    const parts = locale.split('-');
+    if (parts.length > 1) {
+      const c = parts[1].toUpperCase();
+      if (['IN', 'US', 'GB', 'CA', 'AU', 'JP', 'DE', 'FR'].includes(c)) {
+        const nameMap: Record<string, string> = {
+          IN: 'India', US: 'United States', GB: 'United Kingdom', CA: 'Canada',
+          AU: 'Australia', JP: 'Japan', DE: 'Germany', FR: 'France'
+        };
+        return { countryCode: c, countryName: nameMap[c] };
       }
+    }
+  } catch (err) {
+    // Silent fallback
+  }
+  return null;
+};
+
+export const getCachedCountry = (): GeolocationData | null => {
+  try {
+    const cached = localStorage.getItem('country_cache');
+    if (!cached) return null;
+    const { data, timestamp } = JSON.parse(cached);
+    if (!data || !timestamp) return null;
+    const isExpired = (Date.now() - timestamp) > 24 * 60 * 60 * 1000;
+    if (isExpired) {
+      localStorage.removeItem('country_cache');
+      return null;
+    }
+    return data;
+  } catch (err) {
+    return null;
+  }
+};
+
+export const setCachedCountry = (data: GeolocationData): void => {
+  try {
+    localStorage.setItem('country_cache', JSON.stringify({
+      data,
+      timestamp: Date.now()
+    }));
+  } catch (err) {
+    // Silent fallback
+  }
+};
+
+export const fetchGeoCountry = async (): Promise<GeolocationData | null> => {
+  try {
+    try {
       const { data } = await apiFetch('/api/location');
       if (data && data.countryCode) {
-        countryCode = data.countryCode;
-        countryName = data.countryName || countryCode;
+        const { currency, symbol } = getCurrencyInfo(data.countryCode);
+        return { countryCode: data.countryCode, countryName: data.countryName || data.countryCode, currency, symbol };
       }
     } catch (backendErr) {
-      if (import.meta.env.DEV) {
-        console.warn('[GEOLOCATION] Backend endpoint failed, falling back to direct ipwho.is fetch:', backendErr);
-      }
-      const ipRes = await fetch('https://ipwho.is/');
-      if (!ipRes.ok) throw new Error('ipwho.is fetch failed');
-      const ipData = await ipRes.json();
-      countryCode = ipData.country_code || 'US';
-      countryName = ipData.country || 'United States';
+      // Silent fallback to ipwho.is
     }
 
-    const { currency, symbol } = getCurrencyInfo(countryCode);
-    const geoData: GeolocationData = { countryCode, countryName, currency, symbol };
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 5000);
 
-    localStorage.setItem(CACHE_KEY, JSON.stringify(geoData));
-    localStorage.setItem(CACHE_TS_KEY, Date.now().toString());
+    const res = await fetch('https://ipwho.is/', { signal: controller.signal });
+    clearTimeout(timeoutId);
 
-    if (import.meta.env.DEV) {
-      console.log('[GEOLOCATION] New geolocation detected and cached:', geoData);
+    if (!res.ok) return null;
+    const data = await res.json();
+    if (data && data.country_code) {
+      const { currency, symbol } = getCurrencyInfo(data.country_code);
+      return { countryCode: data.country_code, countryName: data.country || data.country_code, currency, symbol };
     }
-    return geoData;
-  } catch (error) {
-    if (import.meta.env.DEV) {
-      console.warn('[GEOLOCATION] Geolocation failed, attempting fallback via navigator.language...', error);
-    }
-    // Fallback to browser locale (navigator.language)
-    let countryCode = 'US';
-    if (typeof navigator !== 'undefined' && navigator.language) {
-      const parts = navigator.language.split('-');
-      if (parts.length > 1) {
-        countryCode = parts[1].toUpperCase();
-      } else if (parts[0].toLowerCase() === 'en') {
-        countryCode = 'US';
-      } else if (parts[0].toLowerCase() === 'hi') {
-        countryCode = 'IN';
-      } else if (parts[0].toLowerCase() === 'ja') {
-        countryCode = 'JP';
-      }
-    }
-
-    const { currency, symbol } = getCurrencyInfo(countryCode);
-    if (import.meta.env.DEV) {
-      console.log(`[GEOLOCATION] Fallback completed. Country: ${countryCode} | Currency: ${currency}`);
-    }
-    return { countryCode, countryName: countryCode, currency, symbol };
+    return null;
+  } catch (err) {
+    if (import.meta.env.DEV) console.error('[CURRENCY SERVICE] fetchGeoCountry error:', err);
+    return null;
   }
 };
 
-export const fetchExchangeRates = async (): Promise<Record<string, number>> => {
-  const CACHE_KEY = 'woomegle_rates_cache';
-  const CACHE_TS_KEY = 'woomegle_rates_ts';
-  const cachedRates = localStorage.getItem(CACHE_KEY);
-  const cacheTimestamp = localStorage.getItem(CACHE_TS_KEY);
+let activeDetectPromise: Promise<GeolocationData> | null = null;
 
-  // Fallback rates in case API is down
-  const fallbackRates: Record<string, number> = {
-    INR: 1,
-    USD: 0.012,
-    GBP: 0.0095,
-    EUR: 0.011,
-    CAD: 0.016,
-    AUD: 0.018,
-    AED: 0.044,
-    SGD: 0.016,
-    JPY: 1.85
-  };
-
-  // Cache for 24 hours
-  if (cachedRates && cacheTimestamp) {
-    const isExpired = (Date.now() - parseInt(cacheTimestamp, 10)) > 24 * 60 * 60 * 1000;
-    if (!isExpired) {
-      if (import.meta.env.DEV) {
-        console.log('[EXCHANGE RATES] Serving cached exchange rates from localStorage');
-      }
-      return JSON.parse(cachedRates);
-    }
+export const detectCountry = (): Promise<GeolocationData> => {
+  if (activeDetectPromise) {
+    return activeDetectPromise;
   }
+  activeDetectPromise = (async () => {
+    try {
+      const cached = getCachedCountry();
+      if (cached) return cached;
 
-  try {
-    if (import.meta.env.DEV) {
-      console.log('[EXCHANGE RATES] Fetching latest exchange rates from open.er-api.com...');
+      const browserCountry = getBrowserCountry();
+      if (browserCountry) {
+        const { currency, symbol } = getCurrencyInfo(browserCountry.countryCode);
+        const geoData: GeolocationData = { ...browserCountry, currency, symbol };
+        setCachedCountry(geoData);
+        return geoData;
+      }
+
+      const geoCountry = await fetchGeoCountry();
+      if (geoCountry) {
+        setCachedCountry(geoCountry);
+        return geoCountry;
+      }
+
+      const fallback: GeolocationData = { countryCode: 'US', countryName: 'United States', currency: 'USD', symbol: '$' };
+      setCachedCountry(fallback);
+      return fallback;
+    } catch (err) {
+      if (import.meta.env.DEV) console.error('[CURRENCY SERVICE] detectCountry error:', err);
+      const fallback: GeolocationData = { countryCode: 'US', countryName: 'United States', currency: 'USD', symbol: '$' };
+      return fallback;
+    } finally {
+      activeDetectPromise = null;
     }
-    const response = await fetch('https://open.er-api.com/v6/latest/INR');
-    if (!response.ok) throw new Error('Exchange rate fetch failed');
-    const data = await response.json();
-    const rates = data.rates || fallbackRates;
+  })();
+  return activeDetectPromise;
+};
 
-    localStorage.setItem(CACHE_KEY, JSON.stringify(rates));
-    localStorage.setItem(CACHE_TS_KEY, Date.now().toString());
-
+export const getCachedRates = (): Record<string, number> | null => {
+  try {
+    const cached = localStorage.getItem('exchange_rates');
+    if (!cached) return null;
+    const { rates, timestamp } = JSON.parse(cached);
+    if (!rates || !timestamp) return null;
+    const isExpired = (Date.now() - timestamp) > 24 * 60 * 60 * 1000;
+    if (isExpired) {
+      localStorage.removeItem('exchange_rates');
+      return null;
+    }
     return rates;
   } catch (err) {
-    if (import.meta.env.DEV) {
-      console.warn('[EXCHANGE RATES] Fetch failed, using fallback exchange rates:', err);
-    }
-    return fallbackRates;
+    return null;
   }
 };
 
-export const getConvertedPlans = (currency: string, symbol: string, rates: Record<string, number>): ConvertedPricing => {
-  // Base Woomegle Premium plans in INR
-  const basePlans = {
-    weekly: 99,
-    monthly: 299,
-    yearly: 1999,
-    weeklyOriginal: 199,
-    monthlyOriginal: 599,
-    yearlyOriginal: 3999
-  };
-
-  if (currency === 'INR') {
-    return { symbol, ...basePlans };
+export const setCachedRates = (rates: Record<string, number>): void => {
+  try {
+    localStorage.setItem('exchange_rates', JSON.stringify({
+      rates,
+      timestamp: Date.now()
+    }));
+  } catch (err) {
+    // Silent fallback
   }
+};
 
-  const rate = rates[currency] || rates['USD'] || 0.012;
-  const formatPrice = (inrPrice: number) => {
-    const converted = inrPrice * rate;
-    // Format beautifully (e.g. round to 2 decimals)
-    return Math.round(converted * 100) / 100;
+let activeRatesPromise: Promise<Record<string, number>> | null = null;
+
+export const fetchExchangeRates = (): Promise<Record<string, number>> => {
+  if (activeRatesPromise) {
+    return activeRatesPromise;
+  }
+  activeRatesPromise = (async () => {
+    const fallbackRates: Record<string, number> = {
+      USD: 1, INR: 83.5, GBP: 0.79, EUR: 0.92, CAD: 1.37, AUD: 1.51, AED: 3.67, SGD: 1.35, JPY: 155.0
+    };
+
+    try {
+      const cached = getCachedRates();
+      if (cached) return cached;
+
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 5000);
+
+      const res = await fetch('https://open.er-api.com/v6/latest/USD', { signal: controller.signal });
+      clearTimeout(timeoutId);
+
+      if (!res.ok) throw new Error('Exchange rate fetch failed');
+      const data = await res.json();
+      const rates = data.rates || fallbackRates;
+      
+      setCachedRates(rates);
+      return rates;
+    } catch (err) {
+      if (import.meta.env.DEV) console.error('[CURRENCY SERVICE] fetchExchangeRates error:', err);
+      return fallbackRates;
+    } finally {
+      activeRatesPromise = null;
+    }
+  })();
+  return activeRatesPromise;
+};
+
+export const convertPrice = (usdPrice: number, currency: string, rates: Record<string, number>): number => {
+  if (currency === 'USD') return usdPrice;
+  const rate = rates[currency] || 1;
+  const converted = usdPrice * rate;
+  if (currency === 'JPY' || currency === 'INR') {
+    return Math.round(converted);
+  }
+  return Math.round(converted * 100) / 100;
+};
+
+export const formatCurrency = (amount: number, currency: string): string => {
+  try {
+    const localeMap: Record<string, string> = {
+      INR: 'en-IN',
+      USD: 'en-US',
+      GBP: 'en-GB',
+      EUR: 'de-DE',
+      CAD: 'en-CA',
+      AUD: 'en-AU',
+      AED: 'ar-AE',
+      SGD: 'en-SG',
+      JPY: 'ja-JP'
+    };
+    const locale = localeMap[currency] || 'en-US';
+    
+    const formatter = new Intl.NumberFormat(locale, {
+      style: 'currency',
+      currency: currency,
+      maximumFractionDigits: currency === 'JPY' || (currency === 'INR' && amount % 1 === 0) ? 0 : 2
+    });
+    return formatter.format(amount);
+  } catch (err) {
+    const symbolMap: Record<string, string> = {
+      INR: '₹', USD: '$', GBP: '£', EUR: '€', CAD: '$', AUD: '$', AED: 'AED ', SGD: '$', JPY: '¥'
+    };
+    const sym = symbolMap[currency] || '$';
+    return `${sym}${amount}`;
+  }
+};
+
+export const updatePricingUI = (currency: string, symbol: string, rates: Record<string, number>): ConvertedPricing => {
+  const basePlans = {
+    weekly: 1.99,
+    monthly: 5.99,
+    yearly: 19.99,
+    weeklyOriginal: 3.99,
+    monthlyOriginal: 9.99,
+    yearlyOriginal: 29.99
   };
 
   return {
     symbol,
-    weekly: formatPrice(basePlans.weekly),
-    monthly: formatPrice(basePlans.monthly),
-    yearly: formatPrice(basePlans.yearly),
-    weeklyOriginal: formatPrice(basePlans.weeklyOriginal),
-    monthlyOriginal: formatPrice(basePlans.monthlyOriginal),
-    yearlyOriginal: formatPrice(basePlans.yearlyOriginal)
+    weekly: convertPrice(basePlans.weekly, currency, rates),
+    monthly: convertPrice(basePlans.monthly, currency, rates),
+    yearly: convertPrice(basePlans.yearly, currency, rates),
+    weeklyOriginal: convertPrice(basePlans.weeklyOriginal, currency, rates),
+    monthlyOriginal: convertPrice(basePlans.monthlyOriginal, currency, rates),
+    yearlyOriginal: convertPrice(basePlans.yearlyOriginal, currency, rates)
   };
 };
+
+export const fetchGeolocation = detectCountry;
+export const getConvertedPlans = updatePricingUI;

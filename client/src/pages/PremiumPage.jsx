@@ -6,21 +6,9 @@ import { apiFetch } from '../config/api';
 
 export default function PremiumPage() {
   const { user, token, fetchProfile } = useAuth();
-  const { pricing, symbol, currency, loading: currencyLoading } = useCurrency();
+  const { pricing, currency, loading: currencyLoading, formatPrice } = useCurrency();
   const [loadingPlan, setLoadingPlan] = useState(null);
   const [purchaseStatus, setPurchaseStatus] = useState(null);
-
-  if (currencyLoading) {
-    return (
-      <div className="relative min-h-[calc(100vh-4rem)] py-12 px-4 flex items-center justify-center transition-colors duration-300">
-        <div className="animated-bg" />
-        <div className="flex flex-col items-center gap-4 text-slate-500 dark:text-gray-400 relative z-10">
-          <Loader2 className="h-8 w-8 animate-spin text-indigo-500" />
-          <p className="font-outfit font-bold">Loading regional pricing...</p>
-        </div>
-      </div>
-    );
-  }
 
   const PLANS = [
     {
@@ -150,8 +138,6 @@ export default function PremiumPage() {
         }
       };
 
-      // In local environments using test keys, if Razorpay object isn't open or we want to simulate
-      // Razorpay checkout can automatically trigger verification directly if mock keys are set
       if (orderData.orderId.startsWith('order_mock_')) {
         console.log("Simulating mock payment check...");
         setTimeout(() => {
@@ -243,7 +229,7 @@ export default function PremiumPage() {
               : 0;
 
             // Estimated tax calculation (e.g. 18% GST/VAT included)
-            const taxAmount = (plan.price * 0.18).toFixed(2);
+            const taxAmount = plan.price * 0.18;
             
             let accentBorder = 'border-slate-200 dark:border-white/5';
             let btnStyle = 'bg-slate-100 hover:bg-slate-200 text-slate-800 dark:bg-white/5 dark:hover:bg-white/10 dark:text-white border border-slate-200 dark:border-white/10';
@@ -285,18 +271,18 @@ export default function PremiumPage() {
                   
                   <div className="mb-6">
                     <div className="flex items-baseline gap-2">
-                      <span className="text-4xl font-extrabold font-outfit text-slate-900 dark:text-white transition-colors duration-300">
-                        {symbol}{plan.price}
+                      <span className="text-3xl font-extrabold font-outfit text-slate-900 dark:text-white transition-colors duration-300">
+                        {currencyLoading ? 'Loading prices...' : formatPrice(plan.price)}
                       </span>
-                      {plan.originalPrice && (
-                        <span className="text-lg text-slate-400 dark:text-gray-500 line-through font-semibold font-outfit">
-                          {symbol}{plan.originalPrice}
+                      {!currencyLoading && plan.originalPrice && (
+                        <span className="text-base text-slate-400 dark:text-gray-500 line-through font-semibold font-outfit">
+                          {formatPrice(plan.originalPrice)}
                         </span>
                       )}
                       <span className="text-sm text-slate-500 dark:text-gray-400 transition-colors duration-300">/ {plan.period}</span>
                     </div>
                     <div className="text-[11px] text-slate-400 dark:text-gray-500 mt-1.5 flex items-center gap-1.5">
-                      <span>Includes {symbol}{taxAmount} applicable taxes & fees</span>
+                      <span>Includes {currencyLoading ? '...' : formatPrice(taxAmount)} applicable taxes & fees</span>
                     </div>
                   </div>
 
@@ -323,10 +309,10 @@ export default function PremiumPage() {
                 <button
                   type="button"
                   onClick={() => handleSubscribe(plan)}
-                  disabled={loadingPlan !== null}
-                  className={`w-full py-3.5 rounded-2xl font-semibold transition-all ${btnStyle}`}
+                  disabled={currencyLoading || loadingPlan !== null}
+                  className={`w-full py-3.5 rounded-2xl font-semibold transition-all ${btnStyle} ${(currencyLoading || loadingPlan !== null) ? 'opacity-60 cursor-not-allowed' : ''}`}
                 >
-                  {loadingPlan === plan.name ? 'Checking out...' : `Get Started`}
+                  {currencyLoading ? 'Loading prices...' : loadingPlan === plan.name ? 'Checking out...' : `Get Started`}
                 </button>
               </div>
             );
