@@ -33,6 +33,11 @@ router.post('/signup', async (req, res) => {
       return res.status(400).json({ message: 'Please enter all required fields' });
     }
 
+    const usernameRegex = /^[A-Za-z]{3,20}$/;
+    if (!usernameRegex.test(username)) {
+      return res.status(400).json({ success: false, message: 'Username can contain only letters.' });
+    }
+
     const db = firebase.db; // read live reference every call
 
     // ── Check username uniqueness ─────────────────────────────────────────────

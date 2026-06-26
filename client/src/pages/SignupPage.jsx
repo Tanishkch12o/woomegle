@@ -13,14 +13,33 @@ export default function SignupPage() {
   
   const [isLoading, setIsLoading] = useState(false);
   const [localError, setLocalError] = useState(null);
+  const [usernameError, setUsernameError] = useState(null);
 
   const { signup } = useAuth();
   const navigate = useNavigate();
+
+  const handleUsernameChange = (e) => {
+    const rawValue = e.target.value;
+    const cleanValue = rawValue.replace(/[^A-Za-z]/g, '');
+    setUsername(cleanValue);
+
+    if (rawValue !== cleanValue || cleanValue.length < 3 || cleanValue.length > 20) {
+      setUsernameError('Username can contain only letters (A-Z). Numbers, spaces, and special characters are not allowed.');
+    } else {
+      setUsernameError(null);
+    }
+  };
+
+  const isUsernameValid = /^[A-Za-z]{3,20}$/.test(username);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!username || !email || !password) {
       setLocalError('Please fill out all required fields');
+      return;
+    }
+    if (!isUsernameValid) {
+      setLocalError('Please enter a valid username');
       return;
     }
 
@@ -86,11 +105,16 @@ export default function SignupPage() {
                   type="text"
                   required
                   value={username}
-                  onChange={(e) => setUsername(e.target.value)}
+                  onChange={handleUsernameChange}
                   className="glass-input pl-10 w-full"
                   placeholder="vibevideo"
                 />
               </div>
+              {usernameError && (
+                <p className="text-[11px] text-red-500 dark:text-red-400 mt-1.5 font-semibold">
+                  {usernameError}
+                </p>
+              )}
             </div>
 
             {/* Email */}
@@ -215,7 +239,7 @@ export default function SignupPage() {
           <div>
             <button
               type="submit"
-              disabled={isLoading}
+              disabled={isLoading || !isUsernameValid}
               className="w-full flex justify-center py-4 px-4 border border-transparent rounded-2xl font-semibold text-white bg-indigo-600 hover:bg-indigo-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-all shadow-lg shadow-indigo-600/30 disabled:opacity-50"
             >
               {isLoading ? 'Creating Account...' : 'Sign Up'}

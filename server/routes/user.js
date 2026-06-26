@@ -101,16 +101,23 @@ router.put('/profile', protect, async (req, res) => {
     if (req.body.language) updates.language = req.body.language;
     if (req.body.profilePic) updates.profilePic = req.body.profilePic;
 
-    if (req.body.username && req.body.username !== req.user.username) {
-      const usernameExists = await db.collection('users')
-        .where('username', '==', req.body.username)
-        .limit(1)
-        .get();
-
-      if (!usernameExists.empty) {
-        return res.status(400).json({ message: 'Username is already taken' });
+    if (req.body.username) {
+      const usernameRegex = /^[A-Za-z]{3,20}$/;
+      if (!usernameRegex.test(req.body.username)) {
+        return res.status(400).json({ success: false, message: 'Username can contain only letters.' });
       }
-      updates.username = req.body.username;
+
+      if (req.body.username !== req.user.username) {
+        const usernameExists = await db.collection('users')
+          .where('username', '==', req.body.username)
+          .limit(1)
+          .get();
+
+        if (!usernameExists.empty) {
+          return res.status(400).json({ message: 'Username is already taken' });
+        }
+        updates.username = req.body.username;
+      }
     }
 
     updates.updatedAt = new Date();

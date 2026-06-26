@@ -25,6 +25,7 @@ export default function ProfilePage() {
   const [isLoading, setIsLoading] = useState(false);
   const [statusMessage, setStatusMessage] = useState(null);
   const [statusType, setStatusType] = useState('success');
+  const [usernameError, setUsernameError] = useState(null);
 
   // Load user data on mount
   useEffect(() => {
@@ -38,8 +39,27 @@ export default function ProfilePage() {
     }
   }, [user]);
 
+  const handleUsernameChange = (e) => {
+    const rawValue = e.target.value;
+    const cleanValue = rawValue.replace(/[^A-Za-z]/g, '');
+    setUsername(cleanValue);
+
+    if (rawValue !== cleanValue || cleanValue.length < 3 || cleanValue.length > 20) {
+      setUsernameError('Username can contain only letters (A-Z). Numbers, spaces, and special characters are not allowed.');
+    } else {
+      setUsernameError(null);
+    }
+  };
+
+  const isUsernameValid = /^[A-Za-z]{3,20}$/.test(username);
+
   const handleSave = async (e) => {
     e.preventDefault();
+    if (!isUsernameValid) {
+      setStatusType('error');
+      setStatusMessage('Please enter a valid username');
+      return;
+    }
     setIsLoading(true);
     setStatusMessage(null);
 
@@ -169,10 +189,15 @@ export default function ProfilePage() {
                       type="text"
                       required
                       value={username}
-                      onChange={(e) => setUsername(e.target.value)}
+                      onChange={handleUsernameChange}
                       className="glass-input pl-10 w-full"
                     />
                   </div>
+                  {usernameError && (
+                    <p className="text-[11px] text-red-500 dark:text-red-400 mt-1.5 font-semibold">
+                      {usernameError}
+                    </p>
+                  )}
                 </div>
 
                 {/* Gender */}
@@ -303,7 +328,7 @@ export default function ProfilePage() {
               <div>
                 <button
                   type="submit"
-                  disabled={isLoading}
+                  disabled={isLoading || !isUsernameValid}
                   className="w-full py-4 px-4 bg-indigo-600 rounded-2xl text-white font-semibold hover:bg-indigo-500 transition-all shadow-lg disabled:opacity-50"
                 >
                   {isLoading ? 'Saving Changes...' : 'Save Settings'}

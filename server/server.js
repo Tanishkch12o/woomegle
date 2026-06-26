@@ -155,6 +155,64 @@ app.get('/sitemap.xml', (req, res) => {
 </urlset>`);
 });
 
+// In-memory location cache for GET /api/location (caches IP lookups for 24 hours)
+const ipLocationCache = new Map();
+
+// GET /api/location - Cached IP geolocation endpoint
+app.get('/api/location', async (req, res) => {
+  try {
+    let clientIp = req.headers['x-forwarded-for'] || req.socket.remoteAddress || req.ip;
+    if (clientIp && clientIp.includes(',')) {
+      clientIp = clientIp.split(',')[0].trim();
+    }
+
+    if (process.env.NODE_ENV !== 'production') {
+      console.log(`[BACKEND /api/location] Client IP detected: ${clientIp}`);
+    }
+
+    // Check IP cache (24 hours expiry)
+    if (clientIp && ipLocationCache.has(clientIp)) {
+      const cached = ipLocationCache.get(clientIp);
+      if (Date.now() - cached.timestamp < 24 * 60 * 60 * 1000) {
+        if (process.env.NODE_ENV !== 'production') {
+          console.log(`[BACKEND /api/location] Serving cached location for IP: ${clientIp}`, cached.data);
+        }
+        return res.json(cached.data);
+      }
+    }
+
+    // Determine if IP is localhost or private, in which case ipwho.is without IP auto-detects server IP or defaults
+    const isLocalhost = !clientIp || clientIp === '127.0.0.1' || clientIp === '::1' || clientIp.startsWith('192.168.') || clientIp.startsWith('10.');
+    const fetchUrl = isLocalhost ? 'https://ipwho.is/' : `https://ipwho.is/${clientIp}`;
+
+    if (process.env.NODE_ENV !== 'production') {
+      console.log(`[BACKEND /api/location] Fetching external geolocation from: ${fetchUrl}`);
+    }
+
+    const response = await fetch(fetchUrl);
+    if (!response.ok) throw new Error('External geolocation provider failed');
+
+    const data = await response.json();
+    const result = {
+      countryCode: data.country_code || 'US',
+      countryName: data.country || 'United States',
+      ip: clientIp
+    };
+
+    if (clientIp) {
+      ipLocationCache.set(clientIp, { data: result, timestamp: Date.now() });
+    }
+
+    return res.json(result);
+  } catch (error) {
+    if (process.env.NODE_ENV !== 'production') {
+      console.error('[BACKEND /api/location ERROR]', error.message);
+    }
+    // Fallback to US if lookup fails
+    return res.json({ countryCode: 'US', countryName: 'United States', ip: 'unknown', fallback: true });
+  }
+});
+
 // Health check routes (/health and /api/health)
 const healthHandler = (req, res) => {
   res.status(200).json({ 

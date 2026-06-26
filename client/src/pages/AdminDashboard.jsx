@@ -20,6 +20,68 @@ export default function AdminDashboard() {
   const [selectedUserToBan, setSelectedUserToBan] = useState(null);
   const [banReason, setBanReason] = useState('Violating platform guidelines');
 
+  // Add User Modal state
+  const [showAddUserModal, setShowAddUserModal] = useState(false);
+  const [newUsername, setNewUsername] = useState('');
+  const [newEmail, setNewEmail] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [newIsAdmin, setNewIsAdmin] = useState(false);
+  const [newIsPremium, setNewIsPremium] = useState(false);
+  const [newUsernameError, setNewUsernameError] = useState(null);
+  const [addUserLoading, setAddUserLoading] = useState(false);
+
+  const handleNewUsernameChange = (e) => {
+    const rawValue = e.target.value;
+    const cleanValue = rawValue.replace(/[^A-Za-z]/g, '');
+    setNewUsername(cleanValue);
+
+    if (rawValue !== cleanValue || cleanValue.length < 3 || cleanValue.length > 20) {
+      setNewUsernameError('Username can contain only letters (A-Z). Numbers, spaces, and special characters are not allowed.');
+    } else {
+      setNewUsernameError(null);
+    }
+  };
+
+  const isNewUsernameValid = /^[A-Za-z]{3,20}$/.test(newUsername);
+
+  const handleAddUser = async (e) => {
+    e.preventDefault();
+    if (!isNewUsernameValid) return;
+    setAddUserLoading(true);
+    try {
+      const { res, data } = await apiFetch('/api/admin/users', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          username: newUsername,
+          email: newEmail,
+          password: newPassword,
+          isAdmin: newIsAdmin,
+          isPremium: newIsPremium
+        })
+      });
+
+      if (res.ok) {
+        setShowAddUserModal(false);
+        setNewUsername('');
+        setNewEmail('');
+        setNewPassword('');
+        setNewIsAdmin(false);
+        setNewIsPremium(false);
+        fetchData();
+      } else {
+        alert(data.message || 'Failed to create user');
+      }
+    } catch (err) {
+      alert(err.message || 'Network error creating user');
+    } finally {
+      setAddUserLoading(false);
+    }
+  };
+
   const fetchData = async () => {
     if (!token) return;
     try {
@@ -281,69 +343,79 @@ export default function AdminDashboard() {
 
             {/* USERS OVERVIEW TAB */}
             {tab === 'users' && (
-              <div className="glass-card rounded-3xl overflow-hidden border border-white/5">
-                <div className="overflow-x-auto">
-                  <table className="w-full text-left text-sm border-collapse">
-                    <thead className="bg-white/5 border-b border-white/5 text-xs text-gray-400 font-bold uppercase tracking-wider">
-                      <tr>
-                        <th className="p-4">Profile</th>
-                        <th className="p-4">Email</th>
-                        <th className="p-4">Location / Language</th>
-                        <th className="p-4">Access Status</th>
-                        <th className="p-4 text-right">Actions</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-white/5">
-                      {usersList.map((usr) => (
-                        <tr key={usr._id} className="hover:bg-white/5 transition-colors">
-                          <td className="p-4 flex items-center gap-2">
-                            <img src={usr.profilePic} alt={usr.username} className="h-8 w-8 rounded-lg object-cover" />
-                            <div className="text-left">
-                              <span className="block font-semibold text-white">{usr.username}</span>
-                              {usr.isAdmin && <span className="text-[8px] bg-indigo-500/10 text-indigo-400 px-1 py-0.5 rounded">Sysop Admin</span>}
-                            </div>
-                          </td>
-                          <td className="p-4 text-gray-300">{usr.email}</td>
-                          <td className="p-4 text-xs text-gray-400 leading-normal">
-                            {usr.country} / {usr.language}
-                          </td>
-                          <td className="p-4">
-                            {usr.isBanned ? (
-                              <span className="inline-flex items-center gap-1 text-xs text-red-400 bg-red-500/10 px-2.5 py-1 rounded-full border border-red-500/20">
-                                <Ban className="h-3 w-3" />
-                                <span>Banned</span>
-                              </span>
-                            ) : usr.isOnline ? (
-                              <span className="inline-flex items-center gap-1 text-xs text-emerald-400 bg-emerald-500/10 px-2.5 py-1 rounded-full border border-emerald-500/20">
-                                <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                                <span>Online</span>
-                              </span>
-                            ) : (
-                              <span className="text-xs text-gray-500 bg-white/5 border border-white/5 px-2.5 py-1 rounded-full">Offline</span>
-                            )}
-                          </td>
-                          <td className="p-4 text-right">
-                            {usr.isBanned ? (
-                              <button
-                                onClick={() => handleUnbanUser(usr._id)}
-                                className="text-xs bg-emerald-500/10 border border-emerald-500/15 hover:bg-emerald-500/20 text-emerald-400 px-3 py-1.5 rounded-xl font-bold transition-all"
-                              >
-                                Revoke Ban
-                              </button>
-                            ) : (
-                              <button
-                                disabled={usr.isAdmin}
-                                onClick={() => setSelectedUserToBan(usr._id)}
-                                className="text-xs bg-red-500/10 border border-red-500/15 hover:bg-red-500/20 text-red-400 px-3 py-1.5 rounded-xl font-bold transition-all disabled:opacity-30"
-                              >
-                                Apply Ban
-                              </button>
-                            )}
-                          </td>
+              <div className="space-y-4">
+                <div className="flex justify-end">
+                  <button
+                    onClick={() => setShowAddUserModal(true)}
+                    className="bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold px-4 py-2.5 rounded-2xl shadow transition-all"
+                  >
+                    + Add New User
+                  </button>
+                </div>
+                <div className="glass-card rounded-3xl overflow-hidden border border-white/5">
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-left text-sm border-collapse">
+                      <thead className="bg-white/5 border-b border-white/5 text-xs text-gray-400 font-bold uppercase tracking-wider">
+                        <tr>
+                          <th className="p-4">Profile</th>
+                          <th className="p-4">Email</th>
+                          <th className="p-4">Location / Language</th>
+                          <th className="p-4">Access Status</th>
+                          <th className="p-4 text-right">Actions</th>
                         </tr>
-                      ))}
-                    </tbody>
-                  </table>
+                      </thead>
+                      <tbody className="divide-y divide-white/5">
+                        {usersList.map((usr) => (
+                          <tr key={usr._id} className="hover:bg-white/5 transition-colors">
+                            <td className="p-4 flex items-center gap-2">
+                              <img src={usr.profilePic} alt={usr.username} className="h-8 w-8 rounded-lg object-cover" />
+                              <div className="text-left">
+                                <span className="block font-semibold text-white">{usr.username}</span>
+                                {usr.isAdmin && <span className="text-[8px] bg-indigo-500/10 text-indigo-400 px-1 py-0.5 rounded">Sysop Admin</span>}
+                              </div>
+                            </td>
+                            <td className="p-4 text-gray-300">{usr.email}</td>
+                            <td className="p-4 text-xs text-gray-400 leading-normal">
+                              {usr.country} / {usr.language}
+                            </td>
+                            <td className="p-4">
+                              {usr.isBanned ? (
+                                <span className="inline-flex items-center gap-1 text-xs text-red-400 bg-red-500/10 px-2.5 py-1 rounded-full border border-red-500/20">
+                                  <Ban className="h-3 w-3" />
+                                  <span>Banned</span>
+                                </span>
+                              ) : usr.isOnline ? (
+                                <span className="inline-flex items-center gap-1 text-xs text-emerald-400 bg-emerald-500/10 px-2.5 py-1 rounded-full border border-emerald-500/20">
+                                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                                  <span>Online</span>
+                                </span>
+                              ) : (
+                                <span className="text-xs text-gray-500 bg-white/5 border border-white/5 px-2.5 py-1 rounded-full">Offline</span>
+                              )}
+                            </td>
+                            <td className="p-4 text-right">
+                              {usr.isBanned ? (
+                                <button
+                                  onClick={() => handleUnbanUser(usr._id)}
+                                  className="text-xs bg-emerald-500/10 border border-emerald-500/15 hover:bg-emerald-500/20 text-emerald-400 px-3 py-1.5 rounded-xl font-bold transition-all"
+                                >
+                                  Revoke Ban
+                                </button>
+                              ) : (
+                                <button
+                                  disabled={usr.isAdmin}
+                                  onClick={() => setSelectedUserToBan(usr._id)}
+                                  className="text-xs bg-red-500/10 border border-red-500/15 hover:bg-red-500/20 text-red-400 px-3 py-1.5 rounded-xl font-bold transition-all disabled:opacity-30"
+                                >
+                                  Apply Ban
+                                </button>
+                              )}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
                 </div>
               </div>
             )}
@@ -472,6 +544,99 @@ export default function AdminDashboard() {
           </div>
         </div>
       )}
+
+      {/* Add User Modal Dialog overlay */}
+      {showAddUserModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+          <div className="w-full max-w-md glass-card rounded-3xl p-6 border border-white/10 text-left">
+            <h3 className="font-outfit font-extrabold text-lg text-white mb-4">
+              Add New User
+            </h3>
+            
+            <form onSubmit={handleAddUser} className="space-y-4">
+              <div>
+                <label className="block text-xs font-semibold text-gray-400 mb-1">Username</label>
+                <input
+                  type="text"
+                  required
+                  value={newUsername}
+                  onChange={handleNewUsernameChange}
+                  className="w-full text-xs bg-white/5 border border-white/10 focus:border-indigo-500 rounded-xl px-3 py-2 outline-none text-white"
+                  placeholder="Only English letters (A-Z, a-z)"
+                />
+                {newUsernameError && (
+                  <p className="text-[11px] text-red-500 dark:text-red-400 mt-1 font-semibold">
+                    {newUsernameError}
+                  </p>
+                )}
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-gray-400 mb-1">Email</label>
+                <input
+                  type="email"
+                  required
+                  value={newEmail}
+                  onChange={(e) => setNewEmail(e.target.value)}
+                  className="w-full text-xs bg-white/5 border border-white/10 focus:border-indigo-500 rounded-xl px-3 py-2 outline-none text-white"
+                  placeholder="user@example.com"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-gray-400 mb-1">Password</label>
+                <input
+                  type="password"
+                  required
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  className="w-full text-xs bg-white/5 border border-white/10 focus:border-indigo-500 rounded-xl px-3 py-2 outline-none text-white"
+                  placeholder="Min 6 characters"
+                />
+              </div>
+
+              <div className="flex items-center gap-4 py-2">
+                <label className="flex items-center gap-2 text-xs text-gray-300 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={newIsPremium}
+                    onChange={(e) => setNewIsPremium(e.target.checked)}
+                    className="rounded bg-white/5 border-white/10 text-indigo-600 focus:ring-indigo-500"
+                  />
+                  <span>Premium Member</span>
+                </label>
+                <label className="flex items-center gap-2 text-xs text-gray-300 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={newIsAdmin}
+                    onChange={(e) => setNewIsAdmin(e.target.checked)}
+                    className="rounded bg-white/5 border-white/10 text-indigo-600 focus:ring-indigo-500"
+                  />
+                  <span>Administrator</span>
+                </label>
+              </div>
+
+              <div className="flex gap-2 justify-end pt-2">
+                <button
+                  type="button"
+                  onClick={() => setShowAddUserModal(false)}
+                  className="bg-white/5 border border-white/10 hover:bg-white/10 text-white px-4 py-2 text-xs rounded-xl font-bold transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={addUserLoading || !isNewUsernameValid}
+                  className="bg-indigo-600 hover:bg-indigo-500 text-white px-5 py-2 text-xs rounded-xl font-bold transition-colors disabled:opacity-50"
+                >
+                  {addUserLoading ? 'Creating...' : 'Create User'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
+

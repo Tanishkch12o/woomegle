@@ -1,12 +1,12 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { fetchGeolocation, GeolocationData } from '../services/currencyService';
-import { getCurrencyCodeForRegion, getPricingForCurrency, RegionPricing } from '../config/pricingConfig';
+import { fetchGeolocation, fetchExchangeRates, getConvertedPlans, GeolocationData, ConvertedPricing } from '../services/currencyService';
 
 interface CurrencyContextProps {
   countryCode: string;
+  countryName: string;
   currency: string;
   symbol: string;
-  pricing: RegionPricing;
+  pricing: ConvertedPricing;
   loading: boolean;
 }
 
@@ -14,9 +14,11 @@ const CurrencyContext = createContext<CurrencyContextProps | undefined>(undefine
 
 export const CurrencyProvider = ({ children }: { children: ReactNode }) => {
   const [countryCode, setCountryCode] = useState<string>('US');
+  const [countryName, setCountryName] = useState<string>('United States');
   const [currency, setCurrency] = useState<string>('USD');
+  const [symbol, setSymbol] = useState<string>('$');
   const [loading, setLoading] = useState<boolean>(true);
-  const [pricing, setPricing] = useState<RegionPricing | null>(null);
+  const [pricing, setPricing] = useState<ConvertedPricing | null>(null);
 
   useEffect(() => {
     let mounted = true;
@@ -24,21 +26,28 @@ export const CurrencyProvider = ({ children }: { children: ReactNode }) => {
     const initCurrency = async () => {
       try {
         const geoData: GeolocationData = await fetchGeolocation();
+        const rates = await fetchExchangeRates();
+
         if (mounted) {
-          const derivedCurrency = getCurrencyCodeForRegion(geoData.countryCode);
-          const currentPricing = getPricingForCurrency(derivedCurrency);
+          const currentPricing = getConvertedPlans(geoData.currency, geoData.symbol, rates);
           
           setCountryCode(geoData.countryCode);
-          setCurrency(derivedCurrency);
+          setCountryName(geoData.countryName);
+          setCurrency(geoData.currency);
+          setSymbol(geoData.symbol);
           setPricing(currentPricing);
         }
       } catch (err) {
-        console.error('Currency Context Init Error:', err);
+        if (import.meta.env.DEV) {
+          console.error('[CURRENCY CONTEXT] Init Error:', err);
+        }
         if (mounted) {
-          // Fallback
+          // Fallback to USD
           setCountryCode('US');
+          setCountryName('United States');
           setCurrency('USD');
-          setPricing(getPricingForCurrency('USD'));
+          setSymbol('$');
+          setPricing(getConvertedPlans('USD', '$', { USD: 0.012 }));
         }
       } finally {
         if (mounted) {
@@ -54,12 +63,13 @@ export const CurrencyProvider = ({ children }: { children: ReactNode }) => {
     };
   }, []);
 
-  // Return a safe default while loading or if something failed
+  const fallbackPricing = getConvertedPlans('USD', '$', { USD: 0.012 });
   const contextValue: CurrencyContextProps = {
     countryCode,
+    countryName,
     currency,
-    symbol: pricing?.symbol || '$',
-    pricing: pricing || getPricingForCurrency('USD'),
+    symbol,
+    pricing: pricing || fallbackPricing,
     loading
   };
 
@@ -77,3 +87,4 @@ export const useCurrency = () => {
   }
   return context;
 };
+

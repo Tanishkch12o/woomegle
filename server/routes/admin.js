@@ -252,4 +252,66 @@ router.get('/users', protect, admin, async (req, res) => {
   }
 });
 
+// @desc    Create a new user (Admin)
+// @route   POST /api/admin/users
+// @access  Private/Admin
+router.post('/users', protect, admin, async (req, res) => {
+  try {
+    const { username, email, password, isAdmin, isPremium } = req.body;
+    if (!username || !email || !password) {
+      return res.status(400).json({ message: 'Please provide username, email, and password' });
+    }
+
+    const usernameRegex = /^[A-Za-z]{3,20}$/;
+    if (!usernameRegex.test(username)) {
+      return res.status(400).json({ success: false, message: 'Username can contain only letters.' });
+    }
+
+    // Check if username or email exists
+    const userSnap = await db.collection('users').where('username', '==', username).limit(1).get();
+    if (!userSnap.empty) {
+      return res.status(400).json({ message: 'Username is already taken' });
+    }
+
+    const emailSnap = await db.collection('users').where('email', '==', email).limit(1).get();
+    if (!emailSnap.empty) {
+      return res.status(400).json({ message: 'Email is already registered' });
+    }
+
+    const bcrypt = require('bcryptjs');
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(password, salt);
+
+    const newUser = {
+      username,
+      email,
+      password: hashedPassword,
+      profilePic: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=150&h=150',
+      isPremium: !!isPremium,
+      premiumUntil: null,
+      interests: [],
+      gender: 'unspecified',
+      country: 'Global',
+      language: 'English',
+      blockedUsers: [],
+      friends: [],
+      friendRequests: [],
+      isBanned: false,
+      banReason: '',
+      isAdmin: !!isAdmin,
+      isOnline: false,
+      socketId: null,
+      createdAt: new Date(),
+      updatedAt: new Date()
+    };
+
+    const docRef = await db.collection('users').add(newUser);
+    return res.status(201).json({ success: true, _id: docRef.id, username, email, isAdmin: newUser.isAdmin });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ message: 'Server error creating user' });
+  }
+});
+
 module.exports = router;
+
