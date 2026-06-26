@@ -4,39 +4,46 @@
 export const API_URL = import.meta.env.VITE_API_URL || 'https://api.woomegle.com';
 
 /**
- * Enhanced fetch helper that adds API_URL, handles network failures gracefully,
- * and validates JSON response content-types.
- * 
- * Replaces direct fetch('/api/...') and res.json() calls with robust error handling.
+ * Enhanced fetch helper that adds API_URL, logs request/response details,
+ * handles network failures gracefully, and validates JSON response content-types.
  */
 export async function apiFetch(endpoint, options = {}) {
-  let res;
-  try {
-    // Prefix endpoint with centralized API_URL
-    res = await fetch(`${API_URL}${endpoint}`, options);
-  } catch (err) {
-    // Handle network failures gracefully (Backend unavailable, Server sleeping, Network error, CORS error)
-    console.error('Network or CORS error:', err);
-    throw new Error('Network error: Backend unavailable, server sleeping (Render), or CORS error.');
+  const fullUrl = `${API_URL}${endpoint}`;
+  console.log(`[API REQUEST] URL: ${fullUrl} | Method: ${options.method || 'GET'}`);
+  if (options.body) {
+    console.log(`[API REQUEST BODY]`, options.body);
   }
 
-  // First check the response content-type before parsing JSON
+  let res;
+  try {
+    res = await fetch(fullUrl, options);
+  } catch (err) {
+    console.error(`[API FETCH FAILED] URL: ${fullUrl} | Error:`, err.message, err.stack);
+    // Print the real backend/network error instead of generic "Backend unavailable"
+    throw new Error(`Failed to fetch from ${fullUrl}: ${err.message}`);
+  }
+
+  console.log(`[API RESPONSE STATUS] URL: ${fullUrl} | Status: ${res.status} ${res.statusText}`);
+
   const contentType = res.headers.get("content-type");
   let data = null;
 
   if (contentType && contentType.includes("application/json")) {
     data = await res.json();
+    console.log(`[API RESPONSE BODY] URL: ${fullUrl}`, data);
   } else {
     const text = await res.text();
-    // Server returned non-JSON response (e.g. HTML 502 Bad Gateway / sleeping server / Render splash page)
-    throw new Error(`Server returned non-JSON response (Backend unavailable or server sleeping): ${text.substring(0, 150)}`);
+    console.log(`[API RESPONSE BODY (TEXT/HTML)] URL: ${fullUrl}`, text);
+    if (!res.ok) {
+      throw new Error(`Backend Error (${res.status}): ${text.substring(0, 250)}`);
+    }
+    return { res, data: { message: text } };
   }
 
-  // Handle Invalid credentials specifically if 401/403 and no message was provided
-  if (!res.ok && (res.status === 401 || res.status === 403)) {
-    if (!data.message) {
-      data.message = 'Invalid credentials or unauthorized access';
-    }
+  if (!res.ok) {
+    const errorMessage = data.message || data.error || `Request failed with status ${res.status}`;
+    console.error(`[API BACKEND ERROR]`, errorMessage);
+    throw new Error(errorMessage);
   }
 
   return { res, data };

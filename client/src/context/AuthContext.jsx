@@ -51,6 +51,7 @@ export const AuthProvider = ({ children }) => {
   const login = async (loginIdentifier, password) => {
     try {
       setError(null);
+      console.log(`[AUTH LOGIN INITIATED] Identifier: ${loginIdentifier}`);
       // Replace fetch('/api/auth/login') with apiFetch
       const { res, data } = await apiFetch('/api/auth/login', {
         method: 'POST',
@@ -58,15 +59,13 @@ export const AuthProvider = ({ children }) => {
         body: JSON.stringify({ loginIdentifier, password })
       });
 
-      if (!res.ok) {
-        throw new Error(data.message || 'Login failed');
-      }
-
       localStorage.setItem('token', data.token);
       setToken(data.token);
       setUser(data);
+      console.log(`[AUTH LOGIN SUCCESS] User ID: ${data._id}`);
       return { success: true };
     } catch (err) {
+      console.error(`[AUTH LOGIN ERROR]`, err.message, err.stack);
       setError(err.message);
       return { success: false, message: err.message };
     }

@@ -124,13 +124,16 @@ router.post('/signup', async (req, res) => {
 // ─── POST /api/auth/login ─────────────────────────────────────────────────────
 router.post('/login', async (req, res) => {
   try {
+    console.log(`[BACKEND /api/auth/login] Request received. Body keys:`, Object.keys(req.body));
     const { loginIdentifier, password } = req.body;
 
     if (!loginIdentifier || !password) {
-      return res.status(400).json({ message: 'Please enter all fields' });
+      console.warn(`[BACKEND /api/auth/login] Missing fields. Identifier provided:`, !!loginIdentifier, `Password provided:`, !!password);
+      return res.status(400).json({ message: 'Please enter all fields (email/username and password are required)' });
     }
 
     const db = firebase.db;
+    console.log(`[BACKEND /api/auth/login] Querying Firestore for user: ${loginIdentifier}`);
 
     // ── Look up user by email then username ───────────────────────────────────
     let userDoc = null;
@@ -141,6 +144,7 @@ router.post('/login', async (req, res) => {
 
     if (emailSnap && !emailSnap.empty) {
       userDoc = { id: emailSnap.docs[0].id, data: emailSnap.docs[0].data() };
+      console.log(`[BACKEND /api/auth/login] User found by email in Firestore. ID: ${userDoc.id}`);
     } else if (emailSnap && emailSnap.empty) {
       // Firestore responded but no email match — try username
       const usernameSnap = await safeQuery(() =>
@@ -148,21 +152,25 @@ router.post('/login', async (req, res) => {
       );
       if (usernameSnap && !usernameSnap.empty) {
         userDoc = { id: usernameSnap.docs[0].id, data: usernameSnap.docs[0].data() };
+        console.log(`[BACKEND /api/auth/login] User found by username in Firestore. ID: ${userDoc.id}`);
       }
     }
 
     // Firestore unavailable — check in-memory
     if (!emailSnap) {
+      console.warn(`[BACKEND /api/auth/login] Firestore query returned null. Falling back to in-memory memUsers store.`);
       const found = [...memUsers.entries()].find(
         ([, u]) => u.email === loginIdentifier || u.username === loginIdentifier
       );
       if (found) {
         userDoc = { id: found[0], data: found[1] };
+        console.log(`[BACKEND /api/auth/login] User found in in-memory store. ID: ${userDoc.id}`);
       }
     }
 
     if (!userDoc) {
-      return res.status(401).json({ message: 'Invalid email or password' });
+      console.warn(`[BACKEND /api/auth/login] User not found in Firestore or in-memory store for identifier: ${loginIdentifier}`);
+      return res.status(401).json({ message: 'Invalid email/username or password. Account not found.' });
     }
 
     const user     = userDoc.data;
@@ -174,16 +182,23 @@ router.post('/login', async (req, res) => {
     );
     if ((banSnap && banSnap.exists) || user.isBanned) {
       const reason = (banSnap && banSnap.exists) ? banSnap.data().banReason : user.banReason;
+      console.warn(`[BACKEND /api/auth/login] User is banned. ID: ${userId} | Reason: ${reason}`);
       return res.status(403).json({
         message: `Access denied. Your account is banned. Reason: ${reason || 'Unspecified'}`
       });
     }
 
     // ── Verify password ───────────────────────────────────────────────────────
+    console.log(`[BACKEND /api/auth/login] Verifying password via bcrypt for user ID: ${userId}`);
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
-      return res.status(401).json({ message: 'Invalid email or password' });
+      console.warn(`[BACKEND /api/auth/login] Password mismatch for user ID: ${userId}`);
+      return res.status(401).json({ message: 'Invalid email/username or password. Incorrect password.' });
     }
+
+    console.log(`[BACKEND /api/auth/login] Password verified. Generating JWT token...`);
+    const token = generateToken(userId);
+    console.log(`[BACKEND /api/auth/login] Login successful for user ID: ${userId}`);
 
     return res.json({
       _id: userId,
@@ -196,12 +211,12 @@ router.post('/login', async (req, res) => {
       gender: user.gender,
       country: user.country,
       language: user.language,
-      token: generateToken(userId)
+      token
     });
 
   } catch (error) {
-    console.error('Login error:', error);
-    return res.status(500).json({ message: 'Server error, please try again' });
+    console.error('[BACKEND /api/auth/login ERROR]', error.message, error.stack);
+    return res.status(500).json({ message: `Server authentication error: ${error.message}` });
   }
 });
 
