@@ -38,8 +38,25 @@ export const getCurrencyInfo = (countryCode: string): { currency: string; symbol
   return { currency: 'USD', symbol: '$' }; // Default fallback
 };
 
+// --- Country name map for display ---
+const COUNTRY_NAMES: Record<string, string> = {
+  IN: 'India', US: 'United States', GB: 'United Kingdom', CA: 'Canada',
+  AU: 'Australia', JP: 'Japan', DE: 'Germany', FR: 'France',
+  IT: 'Italy', ES: 'Spain', NL: 'Netherlands', BR: 'Brazil',
+  MX: 'Mexico', SG: 'Singapore', AE: 'United Arab Emirates',
+};
+
+/**
+ * Extract the 2-letter country/region code from the browser locale.
+ * Uses Intl.Locale API (supported in all modern browsers) for reliable parsing.
+ * Falls back to regex extraction of the region subtag from BCP 47 locale strings.
+ *
+ * Returns null ONLY if the locale is ambiguous (e.g., "en" with no region subtag),
+ * meaning we cannot determine the country from the browser alone.
+ */
 export const getBrowserCountry = (): { countryCode: string; countryName: string; locale: string } | null => {
   try {
+    // Step 1: Get the raw locale string
     let locale = '';
     if (typeof navigator !== 'undefined' && navigator.language) {
       locale = navigator.language;
@@ -50,43 +67,79 @@ export const getBrowserCountry = (): { countryCode: string; countryName: string;
 
     if (!locale) return null;
 
-    if (import.meta.env.DEV) {
-      console.log(`Browser Locale: ${locale}`);
+    console.warn(`[CURRENCY] Browser locale: ${locale}`);
+
+    // Step 2: Try Intl.Locale API for proper BCP 47 parsing
+    let region: string | undefined;
+
+    if (typeof Intl !== 'undefined' && 'Locale' in Intl) {
+      try {
+        // @ts-ignore — Intl.Locale is widely supported but may not be in all TS lib targets
+        const intlLocale = new Intl.Locale(locale);
+        region = intlLocale.region as string | undefined;
+      } catch (_e) {
+        // Intl.Locale constructor can throw for malformed locale strings; fall through
+      }
     }
 
-    const upper = locale.toUpperCase();
-    // Definitive non-US matches that establish country without Geo API
-    if (upper.includes('IN') || upper === 'HI') return { countryCode: 'IN', countryName: 'India', locale };
-    if (upper.includes('GB')) return { countryCode: 'GB', countryName: 'United Kingdom', locale };
-    if (upper.includes('CA')) return { countryCode: 'CA', countryName: 'Canada', locale };
-    if (upper.includes('AU')) return { countryCode: 'AU', countryName: 'Australia', locale };
-    if (upper.includes('JP') || upper === 'JA') return { countryCode: 'JP', countryName: 'Japan', locale };
-    if (upper.includes('DE')) return { countryCode: 'DE', countryName: 'Germany', locale };
-    if (upper.includes('FR')) return { countryCode: 'FR', countryName: 'France', locale };
-    if (upper.includes('IT')) return { countryCode: 'IT', countryName: 'Italy', locale };
-    if (upper.includes('ES')) return { countryCode: 'ES', countryName: 'Spain', locale };
-    if (upper.includes('NL')) return { countryCode: 'NL', countryName: 'Netherlands', locale };
+    // Step 3: Fallback — regex extract region subtag (the part after the hyphen)
+    if (!region) {
+      const match = locale.match(/^[a-z]{2,3}[-_]([A-Z]{2})$/i);
+      if (match) {
+        region = match[1].toUpperCase();
+      }
+    }
 
-    // NOTE: If locale is 'en-US' or 'en', do NOT return US immediately. 
-    // Many users in India use en-US as their default browser language.
-    // We must let it fall through to ipwho.is so their real Indian IP is detected!
-    return null;
+    // Step 4: Check the primary language subtag for language-only locales
+    // "hi" (Hindi) → very likely India
+    if (!region) {
+      const lang = locale.split(/[-_]/)[0].toLowerCase();
+      if (lang === 'hi') {
+        region = 'IN';
+      } else if (lang === 'ja') {
+        region = 'JP';
+      }
+      // "en", "fr", "de" etc. without region → ambiguous, return null
+    }
+
+    if (!region) {
+      console.warn(`[CURRENCY] No region in locale "${locale}", will use geo API`);
+      return null;
+    }
+
+    region = region.toUpperCase();
+    const countryName = COUNTRY_NAMES[region] || region;
+
+    console.warn(`[CURRENCY] Browser locale resolved: region=${region}, country=${countryName}`);
+
+    return { countryCode: region, countryName, locale };
   } catch (err) {
+    console.warn('[CURRENCY] getBrowserCountry() error:', err);
     return null;
   }
 };
 
+// --- Cache key versioned to bust stale entries from previous broken flow ---
+const CACHE_KEY = 'country_cache_v2';
+
 export const getCachedCountry = (): GeolocationData | null => {
   try {
-    const cached = localStorage.getItem('country_cache');
+    const cached = localStorage.getItem(CACHE_KEY);
     if (!cached) return null;
     const { data, timestamp } = JSON.parse(cached);
     if (!data || !timestamp) return null;
     const isExpired = (Date.now() - timestamp) > 24 * 60 * 60 * 1000;
     if (isExpired) {
-      localStorage.removeItem('country_cache');
+      localStorage.removeItem(CACHE_KEY);
       return null;
     }
+
+    // Don't serve cached fallback entries — re-detect instead
+    if (data.source === 'fallback' || data.source === 'error_fallback') {
+      localStorage.removeItem(CACHE_KEY);
+      return null;
+    }
+
     return data;
   } catch (err) {
     return null;
@@ -95,71 +148,103 @@ export const getCachedCountry = (): GeolocationData | null => {
 
 export const setCachedCountry = (data: GeolocationData): void => {
   try {
-    localStorage.setItem('country_cache', JSON.stringify({
+    localStorage.setItem(CACHE_KEY, JSON.stringify({
       data,
       timestamp: Date.now()
     }));
   } catch (err) {
-    // Silent fallback
+    // Silent fallback — localStorage might be full or disabled
   }
 };
 
+/**
+ * Attempt to determine the user's country via network APIs.
+ * Order: Backend /api/location → ipwho.is → null
+ * 
+ * NEVER throws. Returns null if all sources fail.
+ * All errors are logged with console.warn (survives production esbuild).
+ */
 export const fetchGeoCountry = async (): Promise<{ countryCode: string; countryName: string; geoApiResponse: any } | null> => {
+  // --- Attempt 1: Our own backend /api/location ---
   try {
-    if (import.meta.env.DEV) {
-      console.log('Geo API Called: true');
+    console.warn('[CURRENCY] Calling backend /api/location...');
+    const { data } = await apiFetch('/api/location');
+    if (data && data.countryCode) {
+      console.warn(`[CURRENCY] Backend responded: ${JSON.stringify(data)}`);
+      return {
+        countryCode: data.countryCode,
+        countryName: data.countryName || data.countryCode,
+        geoApiResponse: data,
+      };
     }
+    console.warn('[CURRENCY] Backend returned no countryCode, trying ipwho.is...');
+  } catch (backendErr: any) {
+    // Log the exact failure reason so it's visible in production DevTools
+    console.warn('[CURRENCY] Backend /api/location failed:', backendErr?.message || backendErr);
+  }
 
-    try {
-      const { data } = await apiFetch('/api/location');
-      if (data && data.countryCode) {
-        if (import.meta.env.DEV) {
-          console.log('Geo API Response:', JSON.stringify(data));
-        }
-        return { countryCode: data.countryCode, countryName: data.countryName || data.countryCode, geoApiResponse: data };
-      }
-    } catch (backendErr) {
-      // Silent fallback to ipwho.is
-    }
-
+  // --- Attempt 2: ipwho.is public API ---
+  try {
+    console.warn('[CURRENCY] Calling ipwho.is fallback...');
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 5000);
 
     const res = await fetch('https://ipwho.is/', { signal: controller.signal });
     clearTimeout(timeoutId);
 
-    if (!res.ok) return null;
+    if (!res.ok) {
+      console.warn(`[CURRENCY] ipwho.is returned HTTP ${res.status}`);
+      return null;
+    }
+
     const data = await res.json();
-    if (import.meta.env.DEV) {
-      console.log('Geo API Response:', JSON.stringify(data));
-    }
     if (data && data.country_code) {
-      return { countryCode: data.country_code, countryName: data.country || data.country_code, geoApiResponse: data };
+      console.warn(`[CURRENCY] ipwho.is responded: country=${data.country_code}`);
+      return {
+        countryCode: data.country_code,
+        countryName: data.country || data.country_code,
+        geoApiResponse: data,
+      };
     }
+    console.warn('[CURRENCY] ipwho.is returned no country_code');
     return null;
-  } catch (err) {
-    if (import.meta.env.DEV) console.error('[CURRENCY SERVICE] fetchGeoCountry error:', err);
+  } catch (ipErr: any) {
+    if (ipErr?.name === 'AbortError') {
+      console.warn('[CURRENCY] ipwho.is timed out after 5s');
+    } else {
+      console.warn('[CURRENCY] ipwho.is failed:', ipErr?.message || ipErr);
+    }
     return null;
   }
 };
 
 let activeDetectPromise: Promise<GeolocationData> | null = null;
 
+/**
+ * Main detection entrypoint. NEVER throws.
+ * 
+ * Priority:
+ *   1. Cached result (24h TTL, excludes stale fallbacks)
+ *   2. Browser locale (Intl.Locale region parsing)
+ *      → If region is IN, immediately returns INR
+ *   3. Backend /api/location
+ *   4. ipwho.is
+ *   5. USD fallback (graceful, no error thrown)
+ */
 export const detectCountry = (): Promise<GeolocationData> => {
   if (activeDetectPromise) {
     return activeDetectPromise;
   }
   activeDetectPromise = (async () => {
     try {
+      // --- Priority 1: Cache ---
       const cached = getCachedCountry();
       if (cached) {
-        if (import.meta.env.DEV) {
-          console.log(`Detected Country: ${cached.countryCode}`);
-          console.log(`Detected Currency: ${cached.currency}`);
-        }
+        console.warn(`[CURRENCY] Using cached: country=${cached.countryCode} currency=${cached.currency} source=${cached.source}`);
         return cached;
       }
 
+      // --- Priority 2: Browser locale ---
       const browserCountry = getBrowserCountry();
       if (browserCountry) {
         const { currency, symbol } = getCurrencyInfo(browserCountry.countryCode);
@@ -168,18 +253,16 @@ export const detectCountry = (): Promise<GeolocationData> => {
           countryName: browserCountry.countryName, 
           currency, 
           symbol,
-          source: 'navigator.language',
+          source: 'browser_locale',
           geoApiCalled: false,
           geoApiResponse: null
         };
-        if (import.meta.env.DEV) {
-          console.log(`Detected Country: ${geoData.countryCode}`);
-          console.log(`Detected Currency: ${geoData.currency}`);
-        }
+        console.warn(`[CURRENCY] Detected from browser locale: country=${geoData.countryCode} currency=${geoData.currency}`);
         setCachedCountry(geoData);
         return geoData;
       }
 
+      // --- Priority 3 & 4: Backend → ipwho.is ---
       const geoCountry = await fetchGeoCountry();
       if (geoCountry) {
         const { currency, symbol } = getCurrencyInfo(geoCountry.countryCode);
@@ -188,18 +271,16 @@ export const detectCountry = (): Promise<GeolocationData> => {
           countryName: geoCountry.countryName, 
           currency, 
           symbol, 
-          source: 'ipwho.is',
+          source: 'geo_api',
           geoApiCalled: true,
           geoApiResponse: geoCountry.geoApiResponse
         };
-        if (import.meta.env.DEV) {
-          console.log(`Detected Country: ${geoData.countryCode}`);
-          console.log(`Detected Currency: ${geoData.currency}`);
-        }
+        console.warn(`[CURRENCY] Detected from geo API: country=${geoData.countryCode} currency=${geoData.currency}`);
         setCachedCountry(geoData);
         return geoData;
       }
 
+      // --- Priority 5: Graceful USD fallback (never throw) ---
       const fallback: GeolocationData = { 
         countryCode: 'US', 
         countryName: 'United States', 
@@ -207,26 +288,23 @@ export const detectCountry = (): Promise<GeolocationData> => {
         symbol: '$',
         source: 'fallback',
         geoApiCalled: true,
-        geoApiResponse: { error: 'Geolocation fetch failed' }
+        geoApiResponse: null
       };
-      if (import.meta.env.DEV) {
-        console.log(`Detected Country: ${fallback.countryCode}`);
-        console.log(`Detected Currency: ${fallback.currency}`);
-      }
-      setCachedCountry(fallback);
+      console.warn('[CURRENCY] All detection methods failed, using USD fallback');
+      // Do NOT cache fallback — re-attempt next page load
       return fallback;
     } catch (err) {
-      if (import.meta.env.DEV) console.error('[CURRENCY SERVICE] detectCountry error:', err);
-      const fallback: GeolocationData = { 
+      // This catch should never fire, but safety net
+      console.warn('[CURRENCY] detectCountry() unexpected error:', err);
+      return { 
         countryCode: 'US', 
         countryName: 'United States', 
         currency: 'USD', 
         symbol: '$',
         source: 'error_fallback',
         geoApiCalled: true,
-        geoApiResponse: { error: 'Unexpected error' }
+        geoApiResponse: null
       };
-      return fallback;
     } finally {
       activeDetectPromise = null;
     }
@@ -294,8 +372,7 @@ export const fetchExchangeRates = (): Promise<Record<string, number>> => {
       setCachedRates(rates);
       return rates;
     } catch (err) {
-      if (import.meta.env.DEV) console.error('[CURRENCY SERVICE] fetchExchangeRates error:', err);
-      if (import.meta.env.DEV) console.log(`Exchange Rate: ${JSON.stringify(fallbackRates)}`);
+      console.warn('[CURRENCY] Exchange rate fetch failed, using fallback rates:', err);
       return fallbackRates;
     } finally {
       activeRatesPromise = null;
@@ -361,7 +438,7 @@ export const updatePricingUI = (currency: string, symbol: string, rates: Record<
   let pricing: ConvertedPricing;
 
   if (currency === 'INR') {
-    // Explicit Indian fixed prices: 99, 299, 1999
+    // Explicit Indian fixed prices: ₹99, ₹299, ₹1999
     pricing = {
       symbol,
       weekly: 99,

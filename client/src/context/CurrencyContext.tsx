@@ -65,9 +65,8 @@ export const CurrencyProvider = ({ children }: { children: ReactNode }) => {
           });
         }
       } catch (err: any) {
-        if (import.meta.env.DEV) {
-          console.error('[CURRENCY CONTEXT] Init Error:', err);
-        }
+        // detectCountry() should never throw, but safety net
+        console.warn('[CURRENCY CONTEXT] Init Error:', err);
         if (mounted) {
           setCurrencyState({
             loading: false,
@@ -75,7 +74,7 @@ export const CurrencyProvider = ({ children }: { children: ReactNode }) => {
             currency: 'USD',
             exchangeRate: 1,
             formattedPrices: fallbackPricing,
-            error: err.message || 'Geolocation fetch failed'
+            error: null
           });
         }
       }
