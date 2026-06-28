@@ -21,8 +21,8 @@ export interface ConvertedPricing {
 }
 
 export const EU_COUNTRIES = [
-  'AT', 'BE', 'BG', 'HR', 'CY', 'CZ', 'DK', 'EE', 'FI', 'FR', 
-  'DE', 'GR', 'HU', 'IE', 'IT', 'LV', 'LT', 'LU', 'MT', 'NL', 
+  'AT', 'BE', 'BG', 'HR', 'CY', 'CZ', 'DK', 'EE', 'FI', 'FR',
+  'DE', 'GR', 'HU', 'IE', 'IT', 'LV', 'LT', 'LU', 'MT', 'NL',
   'PL', 'PT', 'RO', 'SK', 'SI', 'ES', 'SE'
 ];
 
@@ -248,10 +248,10 @@ export const detectCountry = (): Promise<GeolocationData> => {
       const browserCountry = getBrowserCountry();
       if (browserCountry) {
         const { currency, symbol } = getCurrencyInfo(browserCountry.countryCode);
-        const geoData: GeolocationData = { 
-          countryCode: browserCountry.countryCode, 
-          countryName: browserCountry.countryName, 
-          currency, 
+        const geoData: GeolocationData = {
+          countryCode: browserCountry.countryCode,
+          countryName: browserCountry.countryName,
+          currency,
           symbol,
           source: 'browser_locale',
           geoApiCalled: false,
@@ -266,11 +266,11 @@ export const detectCountry = (): Promise<GeolocationData> => {
       const geoCountry = await fetchGeoCountry();
       if (geoCountry) {
         const { currency, symbol } = getCurrencyInfo(geoCountry.countryCode);
-        const geoData: GeolocationData = { 
-          countryCode: geoCountry.countryCode, 
-          countryName: geoCountry.countryName, 
-          currency, 
-          symbol, 
+        const geoData: GeolocationData = {
+          countryCode: geoCountry.countryCode,
+          countryName: geoCountry.countryName,
+          currency,
+          symbol,
           source: 'geo_api',
           geoApiCalled: true,
           geoApiResponse: geoCountry.geoApiResponse
@@ -281,10 +281,10 @@ export const detectCountry = (): Promise<GeolocationData> => {
       }
 
       // --- Priority 5: Graceful USD fallback (never throw) ---
-      const fallback: GeolocationData = { 
-        countryCode: 'US', 
-        countryName: 'United States', 
-        currency: 'USD', 
+      const fallback: GeolocationData = {
+        countryCode: 'US',
+        countryName: 'United States',
+        currency: 'USD',
         symbol: '$',
         source: 'fallback',
         geoApiCalled: true,
@@ -296,10 +296,10 @@ export const detectCountry = (): Promise<GeolocationData> => {
     } catch (err) {
       // This catch should never fire, but safety net
       console.warn('[CURRENCY] detectCountry() unexpected error:', err);
-      return { 
-        countryCode: 'US', 
-        countryName: 'United States', 
-        currency: 'USD', 
+      return {
+        countryCode: 'US',
+        countryName: 'United States',
+        currency: 'USD',
         symbol: '$',
         source: 'error_fallback',
         geoApiCalled: true,
@@ -367,7 +367,7 @@ export const fetchExchangeRates = (): Promise<Record<string, number>> => {
       if (!res.ok) throw new Error('Exchange rate fetch failed');
       const data = await res.json();
       const rates = data.rates || fallbackRates;
-      
+
       if (import.meta.env.DEV) console.log(`Exchange Rate: ${JSON.stringify(rates)}`);
       setCachedRates(rates);
       return rates;
@@ -405,7 +405,7 @@ export const formatCurrency = (amount: number, currency: string): string => {
       JPY: 'ja-JP'
     };
     const locale = localeMap[currency] || 'en-US';
-    
+
     const formatter = new Intl.NumberFormat(locale, {
       style: 'currency',
       currency: currency,
