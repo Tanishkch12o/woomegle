@@ -1,11 +1,9 @@
 {
-  "INR": { "symbol": "₹", "weekly": 99, "monthly": 299, "yearly": 1999, "weeklyOriginal": 199, "monthlyOriginal": 599, "yearlyOriginal": 3999 },
-  "USD": { "symbol": "$", "weekly": 1.19, "monthly": 3.59, "yearly": 23.99, "weeklyOriginal": 2.39, "monthlyOriginal": 7.19, "yearlyOriginal": 47.99 },
-  "GBP": { "symbol": "£", "weekly": 0.99, "monthly": 2.89, "yearly": 18.99, "weeklyOriginal": 1.89, "monthlyOriginal": 5.69, "yearlyOriginal": 37.99 },
-  "EUR": { "symbol": "€", "weekly": 1.09, "monthly": 3.29, "yearly": 21.99, "weeklyOriginal": 2.19, "monthlyOriginal": 6.59, "yearlyOriginal": 43.99 },
-  "CAD": { "symbol": "$", "weekly": 1.59, "monthly": 4.79, "yearly": 31.99, "weeklyOriginal": 3.19, "monthlyOriginal": 9.59, "yearlyOriginal": 63.99 },
-  "AUD": { "symbol": "$", "weekly": 1.79, "monthly": 5.39, "yearly": 35.99, "weeklyOriginal": 3.59, "monthlyOriginal": 10.79, "yearlyOriginal": 71.99 },
-  "AED": { "symbol": "AED ", "weekly": 4.39, "monthly": 13.19, "yearly": 87.99, "weeklyOriginal": 8.79, "monthlyOriginal": 26.39, "yearlyOriginal": 175.99 },
-  "SGD": { "symbol": "$", "weekly": 1.59, "monthly": 4.79, "yearly": 31.99, "weeklyOriginal": 3.19, "monthlyOriginal": 9.59, "yearlyOriginal": 63.99 },
-  "JPY": { "symbol": "¥", "weekly": 185, "monthly": 555, "yearly": 3699, "weeklyOriginal": 370, "monthlyOriginal": 1110, "yearlyOriginal": 7398 }
+  "IN": { "currency": "INR", "symbol": "₹", "weekly": 149, "monthly": 399, "yearly": 2999 },
+  "US": { "currency": "USD", "symbol": "$", "weekly": 2.49, "monthly": 5.99, "yearly": 49.99 },
+  "GB": { "currency": "GBP", "symbol": "£", "weekly": 1.99, "monthly": 4.99, "yearly": 39.99 },
+  "EU": { "currency": "EUR", "symbol": "€", "weekly": 2.29, "monthly": 5.49, "yearly": 44.99 },
+  "AE": { "currency": "AED", "symbol": "AED", "weekly": 9, "monthly": 22, "yearly": 179 },
+  "CA": { "currency": "CAD", "symbol": "C$", "weekly": 2.99, "monthly": 6.99, "yearly": 55.99 },
+  "AU": { "currency": "AUD", "symbol": "A$", "weekly": 3.49, "monthly": 7.99, "yearly": 64.99 }
 }

@@ -1,13 +1,11 @@
 import PRICING_DATA from './pricingConfig.json';
 
 export interface RegionPricing {
+  currency: string;
   symbol: string;
   weekly: number;
   monthly: number;
   yearly: number;
-  weeklyOriginal: number;
-  monthlyOriginal: number;
-  yearlyOriginal: number;
 }
 
 export const PRICING_CONFIG: Record<string, RegionPricing> = PRICING_DATA;
@@ -18,17 +16,13 @@ export const EU_COUNTRIES = [
   'PL', 'PT', 'RO', 'SK', 'SI', 'ES', 'SE'
 ];
 
-export const getCurrencyCodeForRegion = (countryCode: string): string => {
-  if (countryCode === 'IN') return 'INR';
-  if (countryCode === 'GB') return 'GBP';
-  if (countryCode === 'US') return 'USD';
-  if (EU_COUNTRIES.includes(countryCode)) return 'EUR';
-  return 'USD'; // Default fallback
-};
-
-export const getPricingForCurrency = (currencyCode: string): RegionPricing => {
-  if (PRICING_CONFIG[currencyCode]) {
-    return PRICING_CONFIG[currencyCode];
+export const getPricingForCountry = (countryCode: string): RegionPricing => {
+  const code = (countryCode || '').toUpperCase();
+  if (PRICING_CONFIG[code]) {
+    return PRICING_CONFIG[code];
   }
-  return PRICING_CONFIG['USD']; // Fallback
+  if (EU_COUNTRIES.includes(code)) {
+    return PRICING_CONFIG['EU'];
+  }
+  return PRICING_CONFIG['US']; // Default fallback
 };

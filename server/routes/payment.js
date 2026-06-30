@@ -22,13 +22,33 @@ const planDays = (planName) => {
   return 30; // Monthly Vibe default
 };
 
-// Helper: Calculate plan amount (for in-memory fallback)
-const planAmount = (planName, currency = 'USD') => {
+// Helper: Calculate plan details (amount & currency)
+const planDetails = (planName, countryCode = 'US') => {
   const PRICING_CONFIG = require('../../client/src/config/pricingConfig.json');
-  const region = PRICING_CONFIG[currency] || PRICING_CONFIG['USD'];
-  if (planName === 'Weekly Pass')  return region.weekly;
-  if (planName === 'Yearly Elite') return region.yearly;
-  return region.monthly; // Monthly Vibe default
+  const code = (countryCode || '').toUpperCase();
+  
+  const EU_COUNTRIES = [
+    'AT', 'BE', 'BG', 'HR', 'CY', 'CZ', 'DK', 'EE', 'FI', 'FR', 
+    'DE', 'GR', 'HU', 'IE', 'IT', 'LV', 'LT', 'LU', 'MT', 'NL', 
+    'PL', 'PT', 'RO', 'SK', 'SI', 'ES', 'SE'
+  ];
+  
+  let region = PRICING_CONFIG[code];
+  if (!region && EU_COUNTRIES.includes(code)) {
+    region = PRICING_CONFIG['EU'];
+  }
+  if (!region) {
+    region = PRICING_CONFIG['US'];
+  }
+
+  let amount = region.monthly;
+  if (planName === 'Weekly Pass')  amount = region.weekly;
+  if (planName === 'Yearly Elite') amount = region.yearly;
+
+  return {
+    amount,
+    currency: region.currency
+  };
 };
 
 // ─── POST /api/payments/order ─────────────────────────────────────────────────
@@ -36,16 +56,23 @@ const planAmount = (planName, currency = 'USD') => {
 // @access Private
 router.post('/order', protect, async (req, res) => {
   try {
-    const { planName, currency = 'USD', amount } = req.body;
+    const { planName, country = 'US' } = req.body;
 
-    const finalAmount = amount || planAmount(planName, currency);
+    if (!planName) {
+      return res.status(400).json({ message: 'Plan name is required' });
+    }
+
+    const details = planDetails(planName, country);
+    const finalAmount = details.amount;
+    const finalCurrency = details.currency;
+
     if (!finalAmount) {
       return res.status(400).json({ message: 'Invalid plan selected' });
     }
 
     const options = {
       amount: Math.round(finalAmount * 100), // convert to cents/paise
-      currency: currency,
+      currency: finalCurrency,
       receipt: `receipt_${Date.now()}_${req.user.id.substring(0, 5)}`
     };
 
@@ -67,7 +94,7 @@ router.post('/order', protect, async (req, res) => {
       user: req.user.id,
       planName,
       amount: finalAmount,
-      currency: currency,
+      currency: finalCurrency,
       razorpayOrderId: order.id,
       status: 'created',
       createdAt: new Date(),
@@ -142,7 +169,7 @@ router.post('/verify', protect, async (req, res) => {
     // ── Resolve subscription data ───────────────────────────────────────────
     // Try Firestore first; fall back to in-memory map; fall back to planName from request
     let resolvedPlanName = planName;
-    let resolvedAmount   = planAmount(planName);
+    let resolvedAmount   = planDetails(planName, 'US').amount;
     let subDocRef        = null;
 
     try {

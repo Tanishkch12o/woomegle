@@ -6,7 +6,7 @@ import { apiFetch } from '../config/api';
 
 export default function PremiumPage() {
   const { user, token, fetchProfile } = useAuth();
-  const { pricing, currency, loading: currencyLoading, formatPrice } = useCurrency();
+  const { pricing, currency, countryCode, loading: currencyLoading, formatPrice } = useCurrency();
   const [loadingPlan, setLoadingPlan] = useState(null);
   const [purchaseStatus, setPurchaseStatus] = useState(null);
 
@@ -71,7 +71,7 @@ export default function PremiumPage() {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
         },
-        body: JSON.stringify({ planName: plan.name, currency: currency, amount: plan.price })
+        body: JSON.stringify({ planName: plan.name, country: countryCode })
       });
 
       if (!orderRes.ok) {

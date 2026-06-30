@@ -1,8 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, useRef, ReactNode } from 'react';
 import { 
   detectCountry, 
-  fetchExchangeRates, 
-  updatePricingUI, 
+  getConvertedPlans, 
   formatCurrency, 
   GeolocationData, 
   ConvertedPricing 
@@ -28,7 +27,7 @@ interface CurrencyContextProps extends CurrencyState {
 const CurrencyContext = createContext<CurrencyContextProps | undefined>(undefined);
 
 export const CurrencyProvider = ({ children }: { children: ReactNode }) => {
-  const fallbackPricing = updatePricingUI('USD', '$', { USD: 1 });
+  const fallbackPricing = getConvertedPlans('US');
   
   const [currencyState, setCurrencyState] = useState<CurrencyState>({
     loading: true,
@@ -49,23 +48,20 @@ export const CurrencyProvider = ({ children }: { children: ReactNode }) => {
     const initCurrency = async () => {
       try {
         const geoData: GeolocationData = await detectCountry();
-        const rates = await fetchExchangeRates();
 
         if (mounted) {
-          const currentPricing = updatePricingUI(geoData.currency, geoData.symbol, rates);
-          const currentRate = rates[geoData.currency] || 1;
+          const currentPricing = getConvertedPlans(geoData.countryCode);
           
           setCurrencyState({
             loading: false,
             country: geoData.countryCode,
             currency: geoData.currency,
-            exchangeRate: currentRate,
+            exchangeRate: 1,
             formattedPrices: currentPricing,
             error: null
           });
         }
       } catch (err: any) {
-        // detectCountry() should never throw, but safety net
         console.warn('[CURRENCY CONTEXT] Init Error:', err);
         if (mounted) {
           setCurrencyState({
