@@ -5,7 +5,7 @@ import { useTheme } from '../context/ThemeContext';
 import { useSocket } from '../context/SocketContext';
 import {
   Sun, Moon, LogOut, Shield, Sparkles, Users, Bell,
-  MessageCircle, Crown, ChevronDown, Menu, X, Video, LayoutDashboard
+  MessageCircle, Crown, ChevronDown, Menu, X, Video, LayoutDashboard, Gift
 } from 'lucide-react';
 
 // ─── Floating particles for navbar background ──────────────────────────────────
@@ -162,6 +162,7 @@ export default function Navbar() {
     { to: '/chat', label: 'Chat Rooms', icon: MessageCircle },
     ...(user ? [
       { to: '/friends', label: 'Friends', icon: Users },
+      { to: '/referrals', label: 'Refer & Earn', icon: Gift },
       { to: '/premium', label: 'Premium', icon: Crown, isGold: true },
     ] : []),
     ...(user?.isAdmin ? [

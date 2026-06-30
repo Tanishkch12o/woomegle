@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { Video, User, Mail, Lock, Globe, Languages, Heart, AlertCircle } from 'lucide-react';
+import { Video, User, Mail, Lock, Globe, Languages, Heart, AlertCircle, Share2 } from 'lucide-react';
 
 export default function SignupPage() {
   const [username, setUsername] = useState('');
@@ -10,6 +10,8 @@ export default function SignupPage() {
   const [gender, setGender] = useState('unspecified');
   const [country, setCountry] = useState('Global');
   const [language, setLanguage] = useState('English');
+  const location = useLocation();
+  const [referralCode, setReferralCode] = useState(new URLSearchParams(location.search).get('ref') || '');
   
   const [isLoading, setIsLoading] = useState(false);
   const [localError, setLocalError] = useState(null);
@@ -46,7 +48,7 @@ export default function SignupPage() {
     try {
       setIsLoading(true);
       setLocalError(null);
-      const res = await signup(username, email, password, gender, country, language);
+      const res = await signup(username, email, password, gender, country, language, referralCode);
       
       if (res.success) {
         navigate('/dashboard');
@@ -232,6 +234,27 @@ export default function SignupPage() {
                   <option value="Canada">Canada</option>
                   <option value="Australia">Australia</option>
                 </select>
+              </div>
+            </div>
+
+            {/* Referral Code */}
+            <div className="sm:col-span-2">
+              <label htmlFor="referralCode" className="block text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-gray-400 mb-1.5 transition-colors duration-300">
+                Referral Code (Optional)
+              </label>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400 dark:text-gray-500 transition-colors duration-300">
+                  <Share2 className="h-4 w-4" />
+                </div>
+                <input
+                  id="referralCode"
+                  name="referralCode"
+                  type="text"
+                  value={referralCode}
+                  onChange={(e) => setReferralCode(e.target.value.toUpperCase())}
+                  className="glass-input pl-10 w-full uppercase"
+                  placeholder="Enter code to help a friend"
+                />
               </div>
             </div>
           </div>

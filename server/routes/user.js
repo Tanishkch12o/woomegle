@@ -136,7 +136,9 @@ router.put('/profile', protect, async (req, res) => {
       interests: freshUser.interests,
       gender: freshUser.gender,
       country: freshUser.country,
-      language: freshUser.language
+      language: freshUser.language,
+      referralCode: freshUser.referralCode || '',
+      referralCount: freshUser.referralCount || 0
     });
   } catch (error) {
     console.error(error);

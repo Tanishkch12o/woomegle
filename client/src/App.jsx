@@ -16,6 +16,7 @@ import ChatPage from './pages/ChatPage';
 import ProfilePage from './pages/ProfilePage';
 import FriendsPage from './pages/FriendsPage';
 import PremiumPage from './pages/PremiumPage';
+import ReferralPage from './pages/ReferralPage';
 import AdminDashboard from './pages/AdminDashboard';
 import PrivacyPolicy from './pages/PrivacyPolicy';
 import TermsOfService from './pages/TermsOfService';
@@ -76,6 +77,7 @@ const RouteTitleManager = () => {
       '/dashboard': 'Member Dashboard | Woomegle',
       '/profile': 'My Profile | Woomegle',
       '/friends': 'My Friends & Matches | Woomegle',
+      '/referrals': 'Refer & Earn | Woomegle',
       '/premium': 'Explore PRO Perks | Woomegle Premium',
       '/admin': 'Admin Dashboard | Woomegle Management'
     };
@@ -148,6 +150,14 @@ function AppContent() {
               element={
                 <PrivateRoute>
                   <FriendsPage />
+                </PrivateRoute>
+              }
+            />
+            <Route
+              path="/referrals"
+              element={
+                <PrivateRoute>
+                  <ReferralPage />
                 </PrivateRoute>
               }
             />

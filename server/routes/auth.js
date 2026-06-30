@@ -3,7 +3,7 @@ const router = express.Router();
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
 const firebase = require('../config/firebase');
-
+const { FieldValue } = require('../config/firebase');
 // In-memory user store — used automatically when Firestore is unavailable
 // Maps userId -> userObject
 const memUsers = new Map();
@@ -27,7 +27,7 @@ const safeQuery = async (queryFn) => {
 // ─── POST /api/auth/signup ────────────────────────────────────────────────────
 router.post('/signup', async (req, res) => {
   try {
-    const { username, email, password, gender, country, language } = req.body;
+    const { username, email, password, gender, country, language, referredBy } = req.body;
 
     if (!username || !email || !password) {
       return res.status(400).json({ message: 'Please enter all required fields' });
@@ -91,6 +91,10 @@ router.post('/signup', async (req, res) => {
       isAdmin: false,
       isOnline: false,
       socketId: null,
+      referralCode: username.substring(0, 4).toUpperCase() + Math.random().toString(36).substring(2, 6).toUpperCase(),
+      referredBy: referredBy || null,
+      referralCount: 0,
+      referredUsers: [],
       createdAt: new Date(),
       updatedAt: new Date()
     };
@@ -100,6 +104,41 @@ router.post('/signup', async (req, res) => {
     try {
       const docRef = await db.collection('users').add(newUser);
       userId = docRef.id;
+
+      // ── Process Referral ────────────────────────────────────────────────────
+      if (referredBy) {
+        const referrerSnap = await db.collection('users').where('referralCode', '==', referredBy).limit(1).get();
+        if (!referrerSnap.empty) {
+          const referrerDoc = referrerSnap.docs[0];
+          const referrerId = referrerDoc.id;
+          const referrerData = referrerDoc.data();
+          
+          let newReferralCount = (referrerData.referralCount || 0) + 1;
+          let updateData = {
+            referralCount: newReferralCount,
+            referredUsers: FieldValue ? FieldValue.arrayUnion(userId) : [...(referrerData.referredUsers || []), userId]
+          };
+
+          // Grant 7 Days Premium if they hit a multiple of 5
+          if (newReferralCount % 5 === 0) {
+            updateData.isPremium = true;
+            const now = Date.now();
+            let currentExpiry = now;
+            if (referrerData.premiumUntil) {
+              currentExpiry = referrerData.premiumUntil._seconds 
+                ? referrerData.premiumUntil._seconds * 1000 
+                : new Date(referrerData.premiumUntil).getTime();
+              // Only extend if it's in the future
+              if (currentExpiry < now) currentExpiry = now;
+            }
+            // Add 7 days
+            updateData.premiumUntil = new Date(currentExpiry + 7 * 24 * 60 * 60 * 1000);
+            console.log(`[REFERRAL] Granted 7 Days Premium to User ${referrerId} for reaching ${newReferralCount} referrals.`);
+          }
+
+          await db.collection('users').doc(referrerId).update(updateData);
+        }
+      }
     } catch (dbErr) {
       console.warn('Firestore unavailable for signup — using in-memory store:', dbErr.message);
       userId = `mem_${Date.now()}_${memIdCounter++}`;
@@ -117,6 +156,8 @@ router.post('/signup', async (req, res) => {
       gender: newUser.gender,
       country: newUser.country,
       language: newUser.language,
+      referralCode: newUser.referralCode,
+      referralCount: newUser.referralCount,
       token: generateToken(userId)
     });
 
@@ -216,6 +257,8 @@ router.post('/login', async (req, res) => {
       gender: user.gender,
       country: user.country,
       language: user.language,
+      referralCode: user.referralCode || '',
+      referralCount: user.referralCount || 0,
       token
     });
 
