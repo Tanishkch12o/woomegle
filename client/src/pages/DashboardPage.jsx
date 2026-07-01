@@ -25,8 +25,18 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="relative min-h-[calc(100vh-4rem)] py-12 px-4 sm:px-6 lg:px-8 transition-colors duration-300">
-      <div className="animated-bg" />
+    <div 
+      className="relative min-h-[calc(100vh-4rem)] py-12 px-4 sm:px-6 lg:px-8 transition-colors duration-300"
+      style={{
+        backgroundImage: "url('/love-bg.png')",
+        backgroundSize: "cover",
+        backgroundPosition: "center",
+        backgroundRepeat: "no-repeat",
+        backgroundAttachment: "fixed"
+      }}
+    >
+      {/* Dark/light overlay to ensure text readability against the image */}
+      <div className="absolute inset-0 bg-white/30 dark:bg-slate-900/60 z-0" />
 
       <div className="mx-auto max-w-7xl space-y-12 relative z-10">
         
